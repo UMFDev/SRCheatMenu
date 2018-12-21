@@ -1,6 +1,6 @@
 # Slime Rancer Cheat Menu (UMF Mod)
 
-**This is only the source for the mod.**
+**This is only the source for the mod.**\n
 **All information and official downloads can be found in the [Steam Discussion release thread](https://steamcommunity.com/app/433340/discussions/0/3397295779079958505/).**
 
 #### Build Steps for Windows:
