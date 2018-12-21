@@ -1,1 +1,1 @@
-1.1|https://github.com/UMFDev/SRCheatMenu/raw/master/SRCheatMenu_v1.0.umfmod
+1.0|https://github.com/UMFDev/SRCheatMenu/raw/master/SRCheatMenu_v1.0.umfmod
