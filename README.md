@@ -1,4 +1,4 @@
-# Slime Rancer Cheat Menu Mod
+# Slime Rancer Cheat Menu (UMF Mod)
 
 #### Build Steps for Windows:
 1. Install [Visual Studio 2017](https://visualstudio.microsoft.com/downloads/).
