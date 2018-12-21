@@ -1,1 +1,1 @@
-1.0|URLComingSoon
+1.1|https://github.com/UMFDev/SRCheatMenu/raw/master/SRCheatMenu_v1.0.umfmod
