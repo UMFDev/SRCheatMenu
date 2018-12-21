@@ -1,7 +1,7 @@
 # SRCheatMenu
 
 #### Build Steps for Windows:
-1. Install [Visual Stuiod 2017](https://visualstudio.microsoft.com/downloads/).
+1. Install [Visual Studio 2017](https://visualstudio.microsoft.com/downloads/).
 2. Install [Slime Rancher](https://store.steampowered.com/app/433340/).
 3. Install [uMod Framework](https://umodframework.com/download.html).
 4. Git clone or download this project.
