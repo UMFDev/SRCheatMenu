@@ -1,4 +1,4 @@
-# SRCheatMenu
+# Slime Rancer Cheat Menu Mod
 
 #### Build Steps for Windows:
 1. Install [Visual Studio 2017](https://visualstudio.microsoft.com/downloads/).
