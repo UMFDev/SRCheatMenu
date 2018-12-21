@@ -1,0 +1,69 @@
+﻿Press B to open the Cheat Menu while in-game.
+
+Type "help srcm" in console to get a list of console commands this mod adds.
+
+You can bind console commands to a button using bind.
+Example: bind u spawn gold_slime 5
+You can also save your binds so they are loaded the next time you start the game.
+Example: savebinds AutoExec
+
+Make sure you backup your save before using any of the unlock and reset commands.
+
+
+Version 1.0
+- SR Inventory Editor was renamed to SR Cheat Menu
+- SR Cheat Menu is now open source @ https://github.com/UMFDev/SRCheatMenu
+- New: Added NoClip, InfHealth, InfEnergy, IncTime and DecTime as buttons in the GUI.
+- New: Added Keys to the GUI.
+- New: Added console command srcm_printspawns which prints all spawnables to a text file and opens it in the default text editor.
+- New: Added console command srcm_printitems which prints all currently available inventory items to a text file and opens it in the default text editor.
+- Changed: All console commands that started with srie has now been renamed to srcm due to match the mod rename.
+- Changed: Improved noclip. This should also work with teleporters now. (Thanks to CabbageCrow)
+- Changed: The infinitehealth command now also prevents rads and the slime sea from killing the player.
+- Changed: The increase and decrease time commands now supports a optional argument minutes. 1 hour is default.
+- Changed: Search with the spawn and item commands now shows item names with spaces in quotes as well as the item id.
+- Changed: The delete radius command is now safer to use.
+- Bugfix: Fixed issue with GUI not switching to Nimble Valley inventory when in Nimble Valley/Mochi's Ranch.
+- Bugfix: Fixed increase and decrease time which broke in 1.3.2.
+- Bugfix: Fixed ESC not working to close the Menu Window.
+- Bugfix: Fixed the X buttons on item slots not removing the item in the slot.
+- Bugfix: Fixed issues with the command unlockprogress.
+
+
+Version 0.70
+- New: Added console command srie_noclip for flying/walking through walls.
+- New: Added console command srie_infiniteHealth to toggle infinite health.
+- New: Added console command srie_infiniteEnergy to toggle infinite energy.
+- New: Added console command srie_increaseTime to move time forward a little.
+- New: Added console command srie_decreaseTime to move time backwards a little.
+- New: Added console command srie_unlockUpgrades to unlock all player upgrades.
+- New: Added console command srie_resetUpgrades to reset all player upgrades.
+- New: Added console command srie_unlockProgress to unlock all pedia, tutorial and game progress.
+- New: Added console command srie_resetProgress to reset all pedia, tutorial and game progress.
+- New: Added console command srie_keys (<num>) to set and retrieve the current number of keys.
+
+
+Version 0.62
+- Bugfix: Fixed inability to save after adding item to vac gun after the 1.3.1b update.
+
+
+Version 0.61
+- Bugfix: Fixed items added to the vacgun showing up in the world after save is reloaded.
+
+
+Version 0.60
+- New: Added console command srie_spawn <name/identifiable.id> (<num>) for spawning items and slimes in front of the player. (Supports all physical items, including Gold Slimes, etc.)
+- New: Added console command srie_item <name/identifiable.id> (<num>) (<slot>) for adding items to inventory slots by console command.
+- New: Added console command srie_delete (<radius>) to delete all items within a radius that aren't in a corral, coop or field. (Experimental)
+- New: Added an X button to each item slot to quickly remove any item from slots.
+- Changed: Slightly increased the width of the inventory editor GUI to make room for the X buttons and increase item slider width.
+- Bugfix: Fixed an issue with adding items where the inventory editor left dirty game objects in the world.
+- Bugfix: When a item was added and then shot out, it would add a new item again when opening the inventory editor.
+
+
+Version 0.55
+- Updated for game version 1.3.1.
+
+
+Version 0.50
+- First public release of SR Inventory Editor
