@@ -52,7 +52,7 @@ namespace SRCheatMenu
         //private static readonly RanchDirector.Palette[] blockedPalettes = { RanchDirector.Palette.PALETTE27, RanchDirector.Palette.PALETTE28 };
 
         //Instances
-        public static SRCheatMenu Instance { get; } = new SRCheatMenu();
+        public static SRCheatMenu Instance { get; set; } = new SRCheatMenu();
         private Ammo ammo;
         private PlayerState playerState;
         private GameObject player;
@@ -104,6 +104,7 @@ namespace SRCheatMenu
             UMFGUI.RegisterCommand("srcm_spawn <item name/identifiable.id> (<num>)", "srcm_spawn", new string[] { "spawn" }, 1, "Spawns a item in front of the player.", CommandSpawn);
             UMFGUI.RegisterCommand("srcm_printspawns", "srcm_printspawns", new string[] { "printspawns" }, 0, "Prints a list of spawnable items to a text file and opens it.", CommandPrintSpawns);
             UMFGUI.RegisterCommand("srcm_item <item name/identifiable.id> (<num>) (<slot>)", "srcm_item", new string[] { "item" }, 1, "Adds the specified <num> of <item> into <slot>. If no slot is specified it adds to the first slot.", CommandItem);
+            UMFGUI.RegisterCommand("srcm_refillItems", "srcm_refillitems", new string[] { "refill" }, 0, "Refills all slots that have items in them to the max.", CommandRefillItems);
             UMFGUI.RegisterCommand("srcm_printitems", "srcm_printitems", new string[] { "printitems" }, 0, "Prints a list of items that can currently be added to inventory to a text file and opens it.", CommandPrintItems);
             UMFGUI.RegisterCommand("srcm_keys (<num>)", "srcm_keys", new string[] { "keys" }, 0, "Sets or retrieves the current number of keys.", CommandKeys);
             UMFGUI.RegisterCommand("srcm_delete (<radius>)", "srcm_delete", new string[] { "delete" }, 0, "Deletes all items/slimes that are not in a corral, coop or field within a specified radius. Radius is 50 if none is specified.", CommandDeleteRadius);
@@ -127,6 +128,7 @@ namespace SRCheatMenu
             {
                 if (!playerState && InGame())
                 {
+                    Instance = this;
                     playerState = SRSingleton<SceneContext>.Instance.PlayerState;
                     player = SRSingleton<SceneContext>.Instance.Player;
                     timeDirector = SRSingleton<SceneContext>.Instance.TimeDirector;
@@ -144,6 +146,7 @@ namespace SRCheatMenu
                     pediaDirector = SRSingleton<SceneContext>.Instance.PediaDirector;
                     tutorialDirector = SRSingleton<SceneContext>.Instance.TutorialDirector;
                     tutorialPopupUI = FindObjectOfType<TutorialPopupUI>();
+                    SRCMConfig.Instance.UpdateInstancedBinds();
                 }
                 if (playerState && InGame() && ammo != playerState.Ammo)
                 {
@@ -348,7 +351,7 @@ namespace SRCheatMenu
         }
         #endregion
 
-        #region Item
+        #region Items
         public void CommandItem()
         {
             if (!InGame(true)) return;
@@ -435,9 +438,29 @@ namespace SRCheatMenu
             return ammo.GetSlotMaxCount(slot);
         }
 
+        private int GetUsableSlotCount()
+        {
+            return ammo.GetUsableSlotCount();
+        }
+
         private static string GetItemName(Identifiable.Id id)
         {
             return Identifiable.GetName(id, false) ?? id.ToString();
+        }
+
+        public void CommandRefillItems()
+        {
+            if (!InGame(true)) return;
+            RefillItems();
+            UMFGUI.AddConsoleText("Successfully refilled all slots that had items in them. (If any)");
+        }
+
+        internal void RefillItems()
+        {
+            for (int i = 0; i < GetUsableSlotCount(); i++)
+            {
+                if (GetSlotCount(i) > 0 && GetSlotCount(i) < GetSlotMaxCount(i) && GetSlotItemId(i) != Identifiable.Id.NONE) Item(GetSlotItemId(i), GetSlotMaxCount(i), i);
+            }
         }
 
         public void CommandPrintItems()
@@ -462,25 +485,26 @@ namespace SRCheatMenu
             UMFGUI.AddConsoleText("Successfully turned NoClip " + (noClip ? "on" : "off") + ".");
         }
 
-        private void ToggleNoClip()
+        public void ToggleNoClip()
         {
+            if (!InGame()) return;
             noClip = !noClip;
-            noClipPos = player.transform.position;
+            //noClipPos = player.transform.position;
             controller.gameObject.layer = (noClip ? 14 : 8);
             controller.MotorFreeFly = noClip;
         }
 
-        private void UpdateNoClip()
+        /*private void UpdateNoClip()
         {
-            /*if (noClip && player && camera)
+            if (noClip && player && camera)
             {
                 float speed = 20f * (SRInput.Actions.run.State ? 2f : 1f);
                 noClipPos += camera.transform.forward * SRInput.Actions.vertical.RawValue * speed * Time.deltaTime;
                 noClipPos += camera.transform.right * SRInput.Actions.horizontal.RawValue * speed * Time.deltaTime;
                 controller.Stop();
                 controller.SetPosition(noClipPos);
-            }*/
-        }
+            }
+        }*/
         #endregion
 
         #region Infinite Health
@@ -491,7 +515,7 @@ namespace SRCheatMenu
             UMFGUI.AddConsoleText("Successfully turned Infinite Health " + (infiniteHealth ? "on" : "off") + ".");
         }
 
-        private void ToggleInfiniteHealth()
+        internal void ToggleInfiniteHealth()
         {
             infiniteHealth = !infiniteHealth;
         }
@@ -514,7 +538,7 @@ namespace SRCheatMenu
             UMFGUI.AddConsoleText("Successfully turned Infinite Energy " + (infiniteEnergy ? "on" : "off") + ".");
         }
 
-        private void ToggleInfiniteEnergy()
+        internal void ToggleInfiniteEnergy()
         {
             infiniteEnergy = !infiniteEnergy;
         }
@@ -526,23 +550,42 @@ namespace SRCheatMenu
         #endregion
 
         #region Time
-        public void CommandDecreaseTime()
-        {
-            //0.0416666679
-            if (!InGame(true)) return;
-            double time = 3600d;
-            if (UMFGUI.Args.Length > 0) time = double.Parse(UMFGUI.Args[0]) * 60d;
-            SetWorldTime(GetWorldTime() - time);
-            UMFGUI.AddConsoleText("Successfully decreased world time.");
-        }
-
         public void CommandIncreaseTime()
         {
             if (!InGame(true)) return;
-            double time = 3600d;
+            double time = SRCMConfig.IncDecTimeDefault * 60d;
             if (UMFGUI.Args.Length > 0) time = double.Parse(UMFGUI.Args[0]) * 60d;
-            SetWorldTime(GetWorldTime() + time);
+            IncreaseTime(time);
             UMFGUI.AddConsoleText("Successfully increased world time.");
+        }
+
+        public void CommandDecreaseTime()
+        {
+            if (!InGame(true)) return;
+            double time = SRCMConfig.IncDecTimeDefault * 60d;
+            if (UMFGUI.Args.Length > 0) time = double.Parse(UMFGUI.Args[0]) * 60d;
+            DecreaseTime(time);
+            UMFGUI.AddConsoleText("Successfully decreased world time.");
+        }
+
+        internal void BindIncreaseTime()
+        {
+            IncreaseTime(SRCMConfig.IncDecTimeDefault * 60d);
+        }
+
+        internal void BindDecreaseTime()
+        {
+            DecreaseTime(SRCMConfig.IncDecTimeDefault * 60d);
+        }
+
+        private void IncreaseTime(double time)
+        {
+            SetWorldTime(GetWorldTime() + time);
+        }
+
+        private void DecreaseTime(double time)
+        {
+            SetWorldTime(GetWorldTime() - time);
         }
 
         private void SetWorldTime(double value)
@@ -704,7 +747,7 @@ namespace SRCheatMenu
             return true;
         }
 
-        public void ToggleMenu()
+        internal void ToggleMenu()
         {
             if (!InGame() || UMFGUI.IsMenuOpen || UMFGUI.IsConsoleOpen) return;
             MenuEnabled = !MenuEnabled;
@@ -720,7 +763,7 @@ namespace SRCheatMenu
             UpdatePopups();
             UpdateInfiniteHealth();
             UpdateInfiniteEnergy();
-            UpdateNoClip();
+            //UpdateNoClip();
         }
         #endregion
 
@@ -789,7 +832,12 @@ namespace SRCheatMenu
             int numButtons = 5;
             int buttonBarTotalWidth = 2 + 160 + 10;
             buttonBarScroll = GUI.BeginScrollView(new Rect(2, 30, 160, guiSizeY - 32), buttonBarScroll, new Rect(0, 0, 0, 40 * numButtons + 10), false, true);
-            if (GUI.Button(new Rect(8, buttonBar += 10, 130, 30), "No Clip [" + (noClip ? "On" : "Off") + "]"))
+            if (GUI.Button(new Rect(8, buttonBar += 10, 130, 30), "Refill Items"))
+            {
+                RefillItems();
+                MenuUpdate = true;
+            }
+            if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "No Clip [" + (noClip ? "On" : "Off") + "]"))
             {
                 ToggleNoClip();
                 ToggleMenu();

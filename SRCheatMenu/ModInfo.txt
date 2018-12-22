@@ -17,6 +17,8 @@ Version 1.0
 - New: Added Keys to the GUI.
 - New: Added console command srcm_printspawns which prints all spawnables to a text file and opens it in the default text editor.
 - New: Added console command srcm_printitems which prints all currently available inventory items to a text file and opens it in the default text editor.
+- New: Added console command srcm_refillItems which refills all item slots that have a item to the max.
+- New: Added optional key bindings to the settings for most of the commands.
 - Changed: All console commands that started with srie has now been renamed to srcm due to match the mod rename.
 - Changed: Improved noclip. This should also work with teleporters now. (Thanks to CabbageCrow)
 - Changed: The infinitehealth command now also prevents rads and the slime sea from killing the player.
