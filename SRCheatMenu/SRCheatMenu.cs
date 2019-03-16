@@ -111,6 +111,7 @@ namespace SRCheatMenu
             UMFGUI.RegisterCommand("srcm_noclip", "srcm_noclip", new string[] { "noclip" }, 0, "Toggles walking and flying through objects at high speeds.", CommandNoClip);
             UMFGUI.RegisterCommand("srcm_infiniteHealth", "srcm_infinitehealth", new string[] { "infhealth", "god" }, 0, "Toggles infinite health.", CommandInfiniteHealth);
             UMFGUI.RegisterCommand("srcm_infiniteEnergy", "srcm_infiniteenergy", new string[] { "infenergy" }, 0, "Toggles infinite energy.", CommandInfiniteEnergy);
+            UMFGUI.RegisterCommand("srcm_sleepwalk", "srcm_sleepwalk", new string[] { "sleepwalk" }, 0, "Toggles the fast forward effect from sleeping.", CommandSleepwalk);
             UMFGUI.RegisterCommand("srcm_increaseTime (<minutes>)", "srcm_increasetime", new string[] { "inctime" }, 0, "Increases the world time by 1 hour or the specified minutes.", CommandIncreaseTime);
             UMFGUI.RegisterCommand("srcm_decreaseTime (<minutes>)", "srcm_decreasetime", new string[] { "dectime" }, 0, "Decreases the world time by 1 hour or the specified minutes.", CommandDecreaseTime);
             UMFGUI.RegisterCommand("srcm_unlockUpgrades", "srcm_unlockupgrades", new string[] { "unlockupgrades" }, 0, "Unlocks all player upgrades.", CommandUnlockUpgrades);
@@ -548,7 +549,23 @@ namespace SRCheatMenu
             if (gameModel & infiniteEnergy) playerModel.SetEnergy(playerModel.maxEnergy);
         }
         #endregion
+        
+        #region Sleepwalk
+        public void CommandSleepwalk()
+        {
+            if (!InGame(true)) return;
+            bool wasSleepwalking = timeDirector.IsFastForwarding();
+            ToggleSleepwalk();
+            UMFGUI.AddConsoleText("Successfully turned Sleepwalking " + (!wasSleepwalking ? "on" : "off") + ".");
+        }
 
+        internal void ToggleSleepwalk()
+        {
+            if (!timeDirector.IsFastForwarding()) timeDirector.FastForwardTo(999999999999999999d);
+            else timeDirector.FastForwardTo(timeDirector.WorldTime());
+        }
+        #endregion
+        
         #region Time
         public void CommandIncreaseTime()
         {
@@ -829,7 +846,7 @@ namespace SRCheatMenu
 
             //Command Buttons
             int buttonBar = 0;
-            int numButtons = 5;
+            int numButtons = 6;
             int buttonBarTotalWidth = 2 + 160 + 10;
             buttonBarScroll = GUI.BeginScrollView(new Rect(2, 30, 160, guiSizeY - 32), buttonBarScroll, new Rect(0, 0, 0, 40 * numButtons + 10), false, true);
             if (GUI.Button(new Rect(8, buttonBar += 10, 130, 30), "Refill Items"))
@@ -850,6 +867,11 @@ namespace SRCheatMenu
             if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Inf Energy [" + (infiniteEnergy ? "On" : "Off") + "]"))
             {
                 ToggleInfiniteEnergy();
+                ToggleMenu();
+            }
+            if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Sleepwalk [" + (timeDirector.IsFastForwarding() ? "On" : "Off") + "]"))
+            {
+                ToggleSleepwalk();
                 ToggleMenu();
             }
             if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Inc Time"))
