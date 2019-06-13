@@ -15,6 +15,7 @@ namespace SRCheatMenu
         private static string[] KeysInfEnergy;
         private static string[] KeysIncTime;
         private static string[] KeysDecTime;
+        private static string[] KeysSleepwalk;
         internal static double IncDecTimeDefault;
         internal static Color TextColor;
         internal static Color GUIColor;
@@ -33,10 +34,12 @@ namespace SRCheatMenu
                         SRCheatMenu.Log("The config file was outdated and has been deleted. A new config will be generated.");
                     }
 
+                    //cfg.Write("SupportsHotLoading", new UMFConfigBool(false));
                     cfg.Read("LoadPriority", new UMFConfigString("Normal"));
-                    cfg.Write("MinVersion", new UMFConfigString("0.48"));
+                    cfg.Write("MinVersion", new UMFConfigString("0.52"));
                     cfg.Write("MaxVersion", new UMFConfigString("0.54.99999.99999"));
-                    cfg.Write("UpdateURL", new UMFConfigString(@"https://raw.githubusercontent.com/UMFDev/SRCheatMenu/master/version.txt"));
+                    //cfg.Write("UpdateURL", new UMFConfigString(@"https://raw.githubusercontent.com/UMFDev/SRCheatMenu/master/version.txt"));
+                    cfg.Write("UpdateURL", new UMFConfigString(@"https://umodframework.com/updatemod?id=2"));
                     cfg.Write("ConfigVersion", new UMFConfigString(configVersion));
 
                     SRCheatMenu.Log("Finished UMF Settings.");
@@ -62,6 +65,9 @@ namespace SRCheatMenu
                     KeysDecTime = cfg.Read("KeysDecTime", new UMFConfigStringArray(new string[0], true), "The key(s) used to Decrease Time.");
                     //for (int i = 0; i < KeysDecTime.Length; i++) UMFGUI.RegisterBind("KeysDecTime" + i.ToString(), KeysDecTime[i], SRCheatMenu.Instance.BindDecreaseTime);
 
+                    KeysSleepwalk = cfg.Read("KeysSleepwalk", new UMFConfigStringArray(new string[0], true), "The key(s) used to toggle Sleepwalking.");
+                    //for (int i = 0; i < KeysSleepwalk.Length; i++) UMFGUI.RegisterBind("KeysSleepwalk" + i.ToString(), KeysSleepwalk[i], SRCheatMenu.Instance.BindSleepwalk);
+
                     UpdateInstancedBinds();
 
                     IncDecTimeDefault = cfg.Read("IncDecTimeDefault", new UMFConfigDouble(60d, 1d, 1440d, 0), "The default value used for increasing and decreasing time in minutes.");
@@ -84,6 +90,7 @@ namespace SRCheatMenu
             for (int i = 0; i < KeysNoClip.Length; i++) UMFGUI.RegisterBind("KeysNoClip" + i.ToString(), KeysNoClip[i], SRCheatMenu.Instance.ToggleNoClip);
             for (int i = 0; i < KeysIncTime.Length; i++) UMFGUI.RegisterBind("KeysIncTime" + i.ToString(), KeysIncTime[i], SRCheatMenu.Instance.BindIncreaseTime);
             for (int i = 0; i < KeysDecTime.Length; i++) UMFGUI.RegisterBind("KeysDecTime" + i.ToString(), KeysDecTime[i], SRCheatMenu.Instance.BindDecreaseTime);
+            for (int i = 0; i < KeysSleepwalk.Length; i++) UMFGUI.RegisterBind("KeysSleepwalk" + i.ToString(), KeysSleepwalk[i], SRCheatMenu.Instance.BindSleepwalk);
         }
 
         public static SRCMConfig Instance { get; } = new SRCMConfig();

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using MonomiPark.SlimeRancher.DataModel;
 using UModFramework.API;
-using Harmony;
+using HarmonyLib;
 
 namespace SRCheatMenu
 {
@@ -84,6 +84,7 @@ namespace SRCheatMenu
         void Awake()
         {
             Log("Slime Rancher Cheat Menu v" + UMFMod.GetModVersion().ToString(), true);
+            UMFGUI.RegisterPauseHandler(Pause);
             SRCMConfig.Instance.Load();
             RegisterCommands();
         }
@@ -113,6 +114,7 @@ namespace SRCheatMenu
             UMFGUI.RegisterCommand("srcm_infiniteEnergy", "srcm_infiniteenergy", new string[] { "infenergy" }, 0, "Toggles infinite energy.", CommandInfiniteEnergy);
             UMFGUI.RegisterCommand("srcm_increaseTime (<minutes>)", "srcm_increasetime", new string[] { "inctime" }, 0, "Increases the world time by 1 hour or the specified minutes.", CommandIncreaseTime);
             UMFGUI.RegisterCommand("srcm_decreaseTime (<minutes>)", "srcm_decreasetime", new string[] { "dectime" }, 0, "Decreases the world time by 1 hour or the specified minutes.", CommandDecreaseTime);
+            UMFGUI.RegisterCommand("srcm_sleepwalk", "srcm_sleepwalk", new string[] { "sleepwalk" }, 0, "Toggles the fast forward effect from sleeping.", CommandSleepwalk);
             UMFGUI.RegisterCommand("srcm_unlockUpgrades", "srcm_unlockupgrades", new string[] { "unlockupgrades" }, 0, "Unlocks all player upgrades.", CommandUnlockUpgrades);
             UMFGUI.RegisterCommand("srcm_resetUpgrades", "srcm_resetupgrades", new string[] { "resetupgrades" }, 0, "Resets all player upgrades.", CommandResetUpgrades);
             UMFGUI.RegisterCommand("srcm_unlockProgress", "srcm_unlockprogress", new string[] { "unlockprogress" }, 0, "(Experimental) Unlocks all progress.", CommandUnlockProgress);
@@ -568,6 +570,25 @@ namespace SRCheatMenu
             UMFGUI.AddConsoleText("Successfully decreased world time.");
         }
 
+        public void CommandSleepwalk()
+        {
+            if (!InGame(true)) return;
+            bool wasSleepwalking = timeDirector.IsFastForwarding();
+            ToggleSleepwalk();
+            UMFGUI.AddConsoleText("Successfully turned Sleepwalking " + (!wasSleepwalking ? "on" : "off") + ".");
+        }
+
+        internal void ToggleSleepwalk()
+        {
+            if (!timeDirector.IsFastForwarding()) timeDirector.FastForwardTo(999999999999999999d);
+            else timeDirector.FastForwardTo(timeDirector.WorldTime());
+        }
+
+        internal void BindSleepwalk()
+        {
+            ToggleSleepwalk();
+        }
+
         internal void BindIncreaseTime()
         {
             IncreaseTime(SRCMConfig.IncDecTimeDefault * 60d);
@@ -716,7 +737,23 @@ namespace SRCheatMenu
         #endregion
 
         #region Pause
-        private void Pause()
+        public static void Pause(bool pause)
+        {
+            TimeDirector td = null;
+            try
+            {
+                td = SRSingleton<SceneContext>.Instance.TimeDirector;
+            }
+            catch { }
+            if (!td) return;
+            if (pause)
+            {
+                if (!td.HasPauser()) td.Pause();
+            }
+            else td.Unpause();
+        }
+
+        /*private void Pause()
         {
             if (!timeDirector.HasPauser()) timeDirector.Pause();
         }
@@ -724,13 +761,13 @@ namespace SRCheatMenu
         private void Unpause()
         {
             timeDirector.Unpause();
-        }
+        }*/
 
         private void UpdateUnpause()
         {
             if (!MenuEnabled && MenuWasEnabled)
             {
-                Unpause();
+                Pause(false);
                 MenuWasEnabled = false;
             }
         }
@@ -803,7 +840,7 @@ namespace SRCheatMenu
                 windowRect = GUI.Window(221133, windowRect, CheatMenuWindow, "");
                 if (MenuUpdate) GUI.BringWindowToFront(221133);
                 GUI.FocusWindow(221133);
-                Pause();
+                Pause(true);
                 MenuWasEnabled = true;
             }
         }
@@ -829,7 +866,7 @@ namespace SRCheatMenu
 
             //Command Buttons
             int buttonBar = 0;
-            int numButtons = 5;
+            int numButtons = 6;
             int buttonBarTotalWidth = 2 + 160 + 10;
             buttonBarScroll = GUI.BeginScrollView(new Rect(2, 30, 160, guiSizeY - 32), buttonBarScroll, new Rect(0, 0, 0, 40 * numButtons + 10), false, true);
             if (GUI.Button(new Rect(8, buttonBar += 10, 130, 30), "Refill Items"))
@@ -859,6 +896,11 @@ namespace SRCheatMenu
             if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Dec Time"))
             {
                 SetWorldTime(GetWorldTime() - 3600d);
+            }
+            if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Sleepwalk [" + (timeDirector.IsFastForwarding() ? "On" : "Off") + "]"))
+            {
+                ToggleSleepwalk();
+                ToggleMenu();
             }
             GUI.EndScrollView();
             /*int buttonBar = 0;

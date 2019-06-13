@@ -1,5 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
+  <ImportGroup>
+    <Import Project="../GamePaths.xml" />
+  </ImportGroup>
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -12,7 +15,6 @@
     <FileAlignment>512</FileAlignment>
 	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 	<Configurations>Release</Configurations>
-	<SlimeRancherPath>E:\Games\Steam\steamapps\common\Slime Rancher\</SlimeRancherPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -26,47 +28,47 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>$(SlimeRancherPath)uModFramework\Lib\net35\0Harmony.dll</HintPath>
+      <HintPath>$(GamePath)uModFramework\Lib\net35\0Harmony.dll</HintPath>
       <Private>False</Private>
       <SpecificVersion>false</SpecificVersion>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>$(SlimeRancherPath)SlimeRancher_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>$(GamePath)$(ManagedFolder)Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
       <SpecificVersion>false</SpecificVersion>
     </Reference>
     <Reference Include="uModFramework">
-      <HintPath>$(SlimeRancherPath)SlimeRancher_Data\Managed\uModFramework.dll</HintPath>
+      <HintPath>$(GamePath)$(ManagedFolder)uModFramework.dll</HintPath>
       <Private>False</Private>
       <SpecificVersion>false</SpecificVersion>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>$(SlimeRancherPath)SlimeRancher_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>$(GamePath)$(ManagedFolder)UnityEngine.dll</HintPath>
       <Private>False</Private>
       <SpecificVersion>false</SpecificVersion>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>$(SlimeRancherPath)SlimeRancher_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(GamePath)$(ManagedFolder)UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
       <SpecificVersion>false</SpecificVersion>
     </Reference>
     <Reference Include="UnityEngine.ImageConversionModule">
-      <HintPath>$(SlimeRancherPath)SlimeRancher_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+      <HintPath>$(GamePath)$(ManagedFolder)UnityEngine.ImageConversionModule.dll</HintPath>
       <Private>False</Private>
       <SpecificVersion>false</SpecificVersion>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>$(SlimeRancherPath)SlimeRancher_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <HintPath>$(GamePath)$(ManagedFolder)UnityEngine.IMGUIModule.dll</HintPath>
       <Private>False</Private>
       <SpecificVersion>false</SpecificVersion>
     </Reference>
     <Reference Include="UnityEngine.PhysicsModule">
-      <HintPath>$(SlimeRancherPath)SlimeRancher_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
+      <HintPath>$(GamePath)$(ManagedFolder)UnityEngine.PhysicsModule.dll</HintPath>
       <Private>False</Private>
       <SpecificVersion>false</SpecificVersion>
     </Reference>
     <Reference Include="UnityEngine.TextRenderingModule">
-      <HintPath>$(SlimeRancherPath)SlimeRancher_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+      <HintPath>$(GamePath)$(ManagedFolder)UnityEngine.TextRenderingModule.dll</HintPath>
       <Private>False</Private>
       <SpecificVersion>false</SpecificVersion>
     </Reference>
@@ -77,6 +79,6 @@
     </None>
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-	<Exec Command="&quot;$(SlimeRancherPath)uModFramework\uModFramework.Setup.exe&quot; -packmod SRCheatMenu $(TargetDir)" />
+	<Exec Command="&quot;$(GamePath)uModFramework\Tools\UMF.ModPacker.exe&quot; -packmod $(AssemblyName) &quot;$(TargetDir)&quot;" />
   </Target>
 </Project>

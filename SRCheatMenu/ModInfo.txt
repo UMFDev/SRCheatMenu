@@ -10,6 +10,12 @@ Example: savebinds AutoExec
 Make sure you backup your save before using any of the unlock and reset commands.
 
 
+Version 1.1
+- Updated for UMF 0.52 and Harmony 2.0.
+- Changed: Switched mod updates to use the new UMF website's update tracker.
+- New: Added console command and button for "sleepwalking" (Speedrun/fast forward) (Pull request by ShySkream)
+
+
 Version 1.0
 - SR Inventory Editor was renamed to SR Cheat Menu
 - SR Cheat Menu is now open source @ https://github.com/UMFDev/SRCheatMenu

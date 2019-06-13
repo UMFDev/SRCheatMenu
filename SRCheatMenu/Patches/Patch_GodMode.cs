@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-using Harmony;
+using HarmonyLib;
 
 namespace SRCheatMenu.Patches
 {
@@ -11,14 +11,10 @@ namespace SRCheatMenu.Patches
         {
             if (SRCheatMenu.infiniteHealth && collider.gameObject == SRSingleton<SceneContext>.Instance.Player)
             {
-                SRCheatMenu.Log("DEBUG: KillOnTrigger Player");//DEBUG
+                //SRCheatMenu.Log("DEBUG: KillOnTrigger Player");//DEBUG
                 return false;
             }
             return true;
         }
-
-        /*public static void Postfix(KillOnTrigger __instance, Collider collider)
-        {
-        }*/
     }
 }
