@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using UnityEngine;
 using MonomiPark.SlimeRancher.DataModel;
+using MonomiPark.SlimeRancher.Regions;
 using UModFramework.API;
 using HarmonyLib;
 
@@ -71,6 +72,7 @@ namespace SRCheatMenu
         private PediaDirector pediaDirector;
         private TutorialDirector tutorialDirector;
         private TutorialPopupUI tutorialPopupUI;
+        private RegionRegistry regionRegistry;
 
         //Toggles
         private static bool noClip = false;
@@ -149,13 +151,14 @@ namespace SRCheatMenu
                     pediaDirector = SRSingleton<SceneContext>.Instance.PediaDirector;
                     tutorialDirector = SRSingleton<SceneContext>.Instance.TutorialDirector;
                     tutorialPopupUI = FindObjectOfType<TutorialPopupUI>();
+                    regionRegistry = SRSingleton<SceneContext>.Instance.RegionRegistry;
                     SRCMConfig.Instance.UpdateInstancedBinds();
                 }
                 if (playerState && InGame() && ammo != playerState.Ammo)
                 {
                     ammo = playerState.Ammo;
                     //itemEnum = Enum.GetValues(typeof(Identifiable.Id)).Cast<Identifiable.Id>().ToList();
-                    itemEnum = ammo.potentialAmmo.Select(x => x.GetComponent<Identifiable>().id).ToList();
+                    itemEnum = playerState.GetPotentialAmmo().ToList();
                     itemIdsWater = lookupDirector.vacEntries.Where(x => Identifiable.IsWater(x.id)).Select(z => z.id).ToList();
                     itemIdsWater.Insert(0, Identifiable.Id.NONE);
                     itemEnum = itemEnum.Where(x => !Identifiable.IsWater(x)).ToList();
@@ -332,7 +335,7 @@ namespace SRCheatMenu
             for (int i = 0; i < count; i++)
             {
                 Vector3 pos = player.transform.position + new Vector3(0f, 1.5f, 0f) + (player.transform.forward * 4);
-                GameObject gameObject = SRBehaviour.InstantiateActor(lookupDirector.GetPrefab(itemId), pos, Quaternion.identity, true);
+                GameObject gameObject = SRBehaviour.InstantiateActor(lookupDirector.GetPrefab(itemId), regionRegistry.GetCurrentRegionSetId(), pos, Quaternion.identity, true);
                 Rigidbody rigidbody = gameObject.GetComponent<Rigidbody>();
                 if (rigidbody) rigidbody.AddForce((player.transform.forward * 200f) + (player.transform.up * 100f));
             }
@@ -413,7 +416,7 @@ namespace SRCheatMenu
             ClearItem(slot);
             if (itemId != Identifiable.Id.NONE)
             {
-                GameObject gameObject = gameModel.InstantiateActor(lookupDirector.GetPrefab(itemId), player.transform.position, Quaternion.identity, true);
+                GameObject gameObject = gameModel.InstantiateActor(lookupDirector.GetPrefab(itemId), regionRegistry.GetCurrentRegionSetId(), player.transform.position, Quaternion.identity, true);
                 Identifiable identifiable = gameObject.GetComponent<Identifiable>() ?? gameObject.AddComponent<Identifiable>();
                 ammo.MaybeAddToSpecificSlot(itemId, identifiable, slot, count, false);
                 Destroyer.DestroyActor(gameObject, "Vacuumable.consume", true);
@@ -549,22 +552,6 @@ namespace SRCheatMenu
         private void UpdateInfiniteEnergy()
         {
             if (gameModel & infiniteEnergy) playerModel.SetEnergy(playerModel.maxEnergy);
-        }
-        #endregion
-        
-        #region Sleepwalk
-        public void CommandSleepwalk()
-        {
-            if (!InGame(true)) return;
-            bool wasSleepwalking = timeDirector.IsFastForwarding();
-            ToggleSleepwalk();
-            UMFGUI.AddConsoleText("Successfully turned Sleepwalking " + (!wasSleepwalking ? "on" : "off") + ".");
-        }
-
-        internal void ToggleSleepwalk()
-        {
-            if (!timeDirector.IsFastForwarding()) timeDirector.FastForwardTo(999999999999999999d);
-            else timeDirector.FastForwardTo(timeDirector.WorldTime());
         }
         #endregion
         
@@ -904,11 +891,6 @@ namespace SRCheatMenu
             if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Inf Energy [" + (infiniteEnergy ? "On" : "Off") + "]"))
             {
                 ToggleInfiniteEnergy();
-                ToggleMenu();
-            }
-            if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Sleepwalk [" + (timeDirector.IsFastForwarding() ? "On" : "Off") + "]"))
-            {
-                ToggleSleepwalk();
                 ToggleMenu();
             }
             if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Inc Time"))

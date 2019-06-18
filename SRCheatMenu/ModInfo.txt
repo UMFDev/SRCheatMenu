@@ -10,6 +10,10 @@ Example: savebinds AutoExec
 Make sure you backup your save before using any of the unlock and reset commands.
 
 
+Version 1.15
+- Updated for Slime Rancher 1.4.0.
+
+
 Version 1.1
 - Updated for UMF 0.52 and Harmony 2.0.
 - Changed: Switched mod updates to use the new UMF website's update tracker.

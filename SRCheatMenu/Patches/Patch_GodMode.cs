@@ -9,7 +9,7 @@ namespace SRCheatMenu.Patches
     {
         public static bool Prefix(KillOnTrigger __instance, Collider collider)
         {
-            if (SRCheatMenu.infiniteHealth && collider.gameObject == SRSingleton<SceneContext>.Instance.Player)
+            if (SRCheatMenu.infiniteHealth && PhysicsUtil.IsPlayerMainCollider(collider))
             {
                 //SRCheatMenu.Log("DEBUG: KillOnTrigger Player");//DEBUG
                 return false;
