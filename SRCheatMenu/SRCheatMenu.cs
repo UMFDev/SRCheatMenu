@@ -18,17 +18,22 @@ namespace SRCheatMenu
         #region Variables
         //GUI
         private static readonly int guiSizeX = 820;
-        private static readonly int guiSizeY = 450;
+        private static readonly int guiSizeY = 480;
         private static readonly Rect guiRect = new Rect((Screen.width / 2) - (guiSizeX / 2), (Screen.height / 2) - (guiSizeY / 2), guiSizeX, guiSizeY);
+        private int toolbarTab = 0;
+        private int toolbarTabPrevious = 0;
         private Rect windowRect = guiRect;
         private Vector2 buttonBarScroll = Vector2.zero;
+        private Vector2 refineryScroll = Vector2.zero;
+        private Vector2 gadgetScroll = Vector2.zero;
         private static GUIStyle styleSlot = new GUIStyle();
         private static GUIStyle styleNormal = new GUIStyle();
         private static GUIStyle styleUpperCenter = new GUIStyle();
         private static GUIStyle styleShadow = new GUIStyle();
+        private static GUIStyle styleDropdown = new GUIStyle();
 
         //Menu
-        private static readonly string MenuName = "SR Cheat Menu";
+        private static readonly string MenuName = "SR Cheat Menu v" + UMFMod.GetModVersion();
         private static bool MenuEnabled = false;
         private static bool MenuWasEnabled = false;
         private static bool MenuUpdate = false;
@@ -36,16 +41,23 @@ namespace SRCheatMenu
         private static string searchPrevious = string.Empty;
         private static string category = "All";
         private static string categoryPrevious = "All";
-        private static List<string> categories = new List<string>() { "All", /*"Allergy Free",*/ "Animal", "Chick", "Craft", "Echo", "Fashion", "Food", "Fruit", "Gordo", "Largo", /*"Non-Slime Resource",*/ "Ornament", "Plort", "Slime", "Toy", "Veggie" };
+        private static List<string> categories = new List<string>() { "All", /*"Allergy Free",*/ "Animal", "Chick", "Craft", "Echo", "Echo Note", "Fashion", "Food", "Fruit", "Gordo", "Largo", /*"Non-Slime Resource",*/ "Ornament", "Plort", "Slime", "Toy", "Veggie" };
         private static Dictionary<string, UMFDropDown> dropDowns = new Dictionary<string, UMFDropDown>();
         private static Dictionary<string, int> slotCounts = new Dictionary<string, int>();
-        private static int money = 0;
-        private static int keys = 0;
+        //private static int money = 0;
+        //private static int keys = 0;
 
         //Items
         private static List<Identifiable.Id> itemEnum = new List<Identifiable.Id>();
         private static List<Identifiable.Id> itemIds = new List<Identifiable.Id>();
         private static List<Identifiable.Id> itemIdsWater = new List<Identifiable.Id>();
+        private static List<Identifiable.Id> itemIdsRefinery = new List<Identifiable.Id>();
+        private static List<Gadget.Id> itemIdsGadgets = new List<Gadget.Id>();
+        private static Dictionary<Identifiable.Id, Texture2D> itemTextures = new Dictionary<Identifiable.Id, Texture2D>();
+        private static Texture2D textureClear = UMFUnity.ColorToTexture2D(2, 2, Color.clear);
+        private static Dictionary<Identifiable.Id, string> refineryNames = new Dictionary<Identifiable.Id, string>();
+        private static Dictionary<Gadget.Id, Texture2D> gadgetTextures = new Dictionary<Gadget.Id, Texture2D>();
+        private static Dictionary<Gadget.Id, string> gadgetNames = new Dictionary<Gadget.Id, string>();
         private static readonly List<Identifiable.Id> blockedIds = new List<Identifiable.Id>() { Identifiable.Id.NONE, Identifiable.Id.PLAYER };
         private static readonly string fileSpawns = Path.Combine(UMFData.ModInfosPath, "SRCheatMenu_Spawns.txt");
         private static readonly string fileItems = Path.Combine(UMFData.ModInfosPath, "SRCheatMenu_Items.txt");
@@ -114,7 +126,6 @@ namespace SRCheatMenu
             UMFGUI.RegisterCommand("srcm_noclip", "srcm_noclip", new string[] { "noclip" }, 0, "Toggles walking and flying through objects at high speeds.", CommandNoClip);
             UMFGUI.RegisterCommand("srcm_infiniteHealth", "srcm_infinitehealth", new string[] { "infhealth", "god" }, 0, "Toggles infinite health.", CommandInfiniteHealth);
             UMFGUI.RegisterCommand("srcm_infiniteEnergy", "srcm_infiniteenergy", new string[] { "infenergy" }, 0, "Toggles infinite energy.", CommandInfiniteEnergy);
-            UMFGUI.RegisterCommand("srcm_sleepwalk", "srcm_sleepwalk", new string[] { "sleepwalk" }, 0, "Toggles the fast forward effect from sleeping.", CommandSleepwalk);
             UMFGUI.RegisterCommand("srcm_increaseTime (<minutes>)", "srcm_increasetime", new string[] { "inctime" }, 0, "Increases the world time by 1 hour or the specified minutes.", CommandIncreaseTime);
             UMFGUI.RegisterCommand("srcm_decreaseTime (<minutes>)", "srcm_decreasetime", new string[] { "dectime" }, 0, "Decreases the world time by 1 hour or the specified minutes.", CommandDecreaseTime);
             UMFGUI.RegisterCommand("srcm_sleepwalk", "srcm_sleepwalk", new string[] { "sleepwalk" }, 0, "Toggles the fast forward effect from sleeping.", CommandSleepwalk);
@@ -152,20 +163,43 @@ namespace SRCheatMenu
                     tutorialDirector = SRSingleton<SceneContext>.Instance.TutorialDirector;
                     tutorialPopupUI = FindObjectOfType<TutorialPopupUI>();
                     regionRegistry = SRSingleton<SceneContext>.Instance.RegionRegistry;
-                    SRCMConfig.Instance.UpdateInstancedBinds();
+                    SRCMConfig.Instance.UpdateBinds();
                 }
                 if (playerState && InGame() && ammo != playerState.Ammo)
                 {
                     ammo = playerState.Ammo;
-                    //itemEnum = Enum.GetValues(typeof(Identifiable.Id)).Cast<Identifiable.Id>().ToList();
-                    itemEnum = playerState.GetPotentialAmmo().ToList();
-                    itemIdsWater = lookupDirector.vacEntries.Where(x => Identifiable.IsWater(x.id)).Select(z => z.id).ToList();
-                    itemIdsWater.Insert(0, Identifiable.Id.NONE);
-                    itemEnum = itemEnum.Where(x => !Identifiable.IsWater(x)).ToList();
+                    if (!SRCMConfig.GetAllItems)
+                    {
+                        itemEnum = playerState.GetPotentialAmmo().ToList();
+                        //itemIdsWater = lookupDirector.vacEntries.Where(x => Identifiable.IsLiquid(x.id)).Select(z => z.id).ToList();
+                        itemIdsWater = itemEnum.Where(x => Identifiable.IsLiquid(x)).ToList();
+                    }
+                    else
+                    {
+                        itemEnum = Enum.GetValues(typeof(Identifiable.Id)).Cast<Identifiable.Id>().Where(x => !Identifiable.IsLiquid(x) && !blockedIds.Contains(x)).ToList();
+                        itemIdsWater = Enum.GetValues(typeof(Identifiable.Id)).Cast<Identifiable.Id>().Where(x => Identifiable.IsLiquid(x)).ToList();
+                    }
+                    if (!itemIdsWater.Contains(Identifiable.Id.NONE)) itemIdsWater.Insert(0, Identifiable.Id.NONE);
+                    itemEnum = itemEnum.Where(x => !Identifiable.IsLiquid(x)).ToList();
                     itemEnum = itemEnum.Where(x => !blockedIds.Contains(x)).ToList();
                     if (itemEnum.Count(x => Identifiable.IsGordo(x)) == 0) categories.Remove("Gordo");
                     if (itemEnum.Count(x => Identifiable.IsLargo(x)) == 0) categories.Remove("Largo");
                     if (itemEnum.Count(x => Identifiable.IsToy(x)) == 0) categories.Remove("Toy");
+                    itemEnum = SortItemList(itemEnum);
+                    itemTextures.Clear();
+                    foreach (Identifiable.Id id in Enum.GetValues(typeof(Identifiable.Id))) itemTextures.Add(id, GetIcon(id)?.texture ?? textureClear);
+                    itemIdsRefinery = Enum.GetValues(typeof(Identifiable.Id)).Cast<Identifiable.Id>().Where(id => GadgetDirector.IsRefineryResource(id)).ToList();
+                    //if (refineryUI && refineryUI.listedItems.Length > 0) itemIdsRefinery = itemIdsRefinery.OrderBy(x => refineryUI.listedItems.ToList().FindIndex(y => x == y)).ToList(); //Where does the refinery pull it's sorting from?
+                    refineryNames.Clear();
+                    foreach (Identifiable.Id id in itemIdsRefinery) refineryNames.Add(id, GetItemName(id));
+                    itemIdsGadgets = Enum.GetValues(typeof(Gadget.Id)).Cast<Gadget.Id>().Where(x => x != Gadget.Id.NONE && lookupDirector.HasGadgetEntry(x)/* && gadgetDirector.HasBlueprint(x)*/).ToList();
+                    gadgetTextures.Clear();
+                    gadgetNames.Clear();
+                    foreach (Gadget.Id id in itemIdsGadgets)
+                    {
+                        gadgetTextures.Add(id, lookupDirector.GetGadgetEntry(id).icon.texture);
+                        gadgetNames.Add(id, GetGadgetName(id));
+                    }
                 }
             }
             catch (Exception e)
@@ -454,6 +488,36 @@ namespace SRCheatMenu
             return Identifiable.GetName(id, false) ?? id.ToString();
         }
 
+        private static List<Identifiable.Id> SortItemList(List<Identifiable.Id> list)
+        {
+            list.Sort();
+            List<Identifiable.Id> result = new List<Identifiable.Id>();
+            result.AddRange(list.Where(x => Identifiable.IsPlort(x) && !result.Contains(x)));
+            result.AddRange(list.Where(x => Identifiable.IsSlime(x) && !result.Contains(x)));
+            result.AddRange(list.Where(x => Identifiable.IsFood(x) && !result.Contains(x)));
+            result.AddRange(list.Where(x => Identifiable.IsAnimal(x) && !result.Contains(x)));
+            result.AddRange(list.Where(x => Identifiable.IsToy(x) && !result.Contains(x)));
+            result.AddRange(list.Where(x => Identifiable.IsFashion(x) && !result.Contains(x)));
+            result.AddRange(list.Where(x => Identifiable.IsCraft(x) && !result.Contains(x)));
+            result.AddRange(list.Where(x => !result.Contains(x)));
+            return result;
+        }
+
+        private Sprite GetIcon(Identifiable.Id id)
+        {
+            try
+            {
+                return Traverse.Create(lookupDirector).Field<Dictionary<Identifiable.Id, LookupDirector.VacEntry>>("vacEntryDict").Value[id].icon;
+            }
+            catch {}
+            return null;
+        }
+
+        private static string GetGadgetName(Gadget.Id id)
+        {
+            return Gadget.GetName(id, false) ?? id.ToString();
+        }
+
         public void CommandRefillItems()
         {
             if (!InGame(true)) return;
@@ -554,7 +618,7 @@ namespace SRCheatMenu
             if (gameModel & infiniteEnergy) playerModel.SetEnergy(playerModel.maxEnergy);
         }
         #endregion
-        
+
         #region Time
         public void CommandIncreaseTime()
         {
@@ -792,6 +856,7 @@ namespace SRCheatMenu
         {
             if (!InGame() || UMFGUI.IsMenuOpen || UMFGUI.IsConsoleOpen) return;
             MenuEnabled = !MenuEnabled;
+            if (MenuEnabled && timeDirector && timeDirector.HasPauser()) MenuEnabled = false;
             if (MenuEnabled) MenuUpdate = true;
         }
         #endregion
@@ -832,6 +897,13 @@ namespace SRCheatMenu
             styleShadow.fontStyle = FontStyle.Bold;
             styleShadow.normal.textColor = Color.black;
             styleShadow.alignment = TextAnchor.UpperCenter;
+
+            styleDropdown.font = Font.CreateDynamicFontFromOSFont("Arial", 18);
+            styleDropdown.fontStyle = FontStyle.Bold;
+            styleDropdown.normal.textColor = Color.white;
+            styleDropdown.alignment = TextAnchor.MiddleLeft;
+            styleDropdown.onHover.background = styleDropdown.hover.background = new Texture2D(2, 2);
+            styleDropdown.padding.left = styleDropdown.padding.right = styleDropdown.padding.top = styleDropdown.padding.bottom = 4;
         }
 
         public void OnGUI()
@@ -862,188 +934,252 @@ namespace SRCheatMenu
             GUI.skin.textField.fontStyle = FontStyle.Bold;
             GUI.skin.textField.alignment = TextAnchor.MiddleLeft;
 
-            GUI.Box(new Rect(2, 2, guiSizeX - 4, 30), "");
+            GUI.Box(new Rect(2, 2, guiSizeX - 4, 64), "");
             GUI.Label(new Rect(1, 8, guiSizeX, 30), MenuName, styleShadow);
             GUI.Label(new Rect(0, 7, guiSizeX, 30), MenuName, styleUpperCenter);
-            if (GUI.Button(new Rect(guiSizeX - 32, 2, 30, 30), "X")) ToggleMenu();
-
-
-            //Command Buttons
-            int buttonBar = 0;
-            int numButtons = 6;
-            int buttonBarTotalWidth = 2 + 160 + 10;
-            buttonBarScroll = GUI.BeginScrollView(new Rect(2, 30, 160, guiSizeY - 32), buttonBarScroll, new Rect(0, 0, 0, 40 * numButtons + 10), false, true);
-            if (GUI.Button(new Rect(8, buttonBar += 10, 130, 30), "Refill Items"))
+            if (GUI.Button(new Rect(guiSizeX - 33, 3, 30, 30), "X")) ToggleMenu();
+            toolbarTab = GUI.Toolbar(new Rect(4, 34, guiSizeX - 8, 30), toolbarTab, new string[] { "Main", "Refinery", "Gadgets" });
+            if (toolbarTab != toolbarTabPrevious)
             {
-                RefillItems();
-                MenuUpdate = true;
-            }
-            if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "No Clip [" + (noClip ? "On" : "Off") + "]"))
-            {
-                ToggleNoClip();
-                ToggleMenu();
-            }
-            if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Inf Health [" + (infiniteHealth ? "On" : "Off") + "]"))
-            {
-                ToggleInfiniteHealth();
-                ToggleMenu();
-            }
-            if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Inf Energy [" + (infiniteEnergy ? "On" : "Off") + "]"))
-            {
-                ToggleInfiniteEnergy();
-                ToggleMenu();
-            }
-            if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Inc Time"))
-            {
-                SetWorldTime(GetWorldTime() + 3600d);
-            }
-            if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Dec Time"))
-            {
-                SetWorldTime(GetWorldTime() - 3600d);
-            }
-            if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Sleepwalk [" + (timeDirector.IsFastForwarding() ? "On" : "Off") + "]"))
-            {
-                ToggleSleepwalk();
-                ToggleMenu();
-            }
-            GUI.EndScrollView();
-            /*int buttonBar = 0;
-            //GUI.Box(new Rect(2, dataHeight += 30, guiSizeX - 4, 50), "");
-            buttonBarScroll = GUI.BeginScrollView(new Rect(2, dataHeight += 30, guiSizeX - 4, 60), buttonBarScroll, new Rect(0, 0, 5 * 140 + 10, 0), true, false);
-            if (GUI.Button(new Rect(buttonBar += 10, 10, 130, 30), "No Clip [" + (noClip ? "On" : "Off") + "]"))
-            {
-                ToggleNoClip();
-                ToggleMenu();
-            }
-            if (GUI.Button(new Rect(buttonBar += 140, 10, 130, 30), "Inf Health [" + (infiniteHealth ? "On" : "Off") + "]"))
-            {
-                ToggleInfiniteHealth();
-                ToggleMenu();
-            }
-            if (GUI.Button(new Rect(buttonBar += 140, 10, 130, 30), "Inf Energy [" + (infiniteEnergy ? "On" : "Off") + "]"))
-            {
-                ToggleInfiniteEnergy();
-                ToggleMenu();
-            }
-            if (GUI.Button(new Rect(buttonBar += 140, 10, 130, 30), "Inc Time"))
-            {
-                SetWorldTime(GetWorldTime() + 3600d);
-            }
-            if (GUI.Button(new Rect(buttonBar += 140, 10, 130, 30), "Dec Time"))
-            {
-                SetWorldTime(GetWorldTime() - 3600d);
-            }
-            GUI.EndScrollView();
-            dataHeight += 30;*/
-
-            int dataHeight = 0;
-
-            //Search
-            GUI.Label(new Rect(buttonBarTotalWidth, dataHeight += 40, 80, 30), "Search: ", styleSlot);
-            search = GUI.TextField(new Rect(buttonBarTotalWidth + 80 + 10, dataHeight, 300, 30), search);
-            if (GUI.Button(new Rect(buttonBarTotalWidth + 80 + 10 + 300 + 10, dataHeight, 30, 30), "X")) search = string.Empty;
-            if (searchPrevious != search || categoryPrevious != category || MenuUpdate)
-            {
-                searchPrevious = search;
-                categoryPrevious = category;
                 dropDowns.Clear();
-                slotCounts.Clear();
+                toolbarTabPrevious = toolbarTab;
             }
-            if (search != string.Empty) itemIds = itemEnum.Where(y => GetItemName(y).ToLower().Contains(search.ToLower())).Select(x => x).ToList();
-            else itemIds = itemEnum;
+            int dataHeight = 36;
 
-
-            //Category
-            GUI.Label(new Rect(buttonBarTotalWidth, dataHeight += 40, 80, 30), "Category: ", styleSlot);
-            if (!dropDowns.ContainsKey("Category"))
+            //Main Tab
+            if (toolbarTab == 0)
             {
-                GUIContent[] dropDownList = new GUIContent[categories.Count];
-                for (int j = 0; j < categories.Count; j++) dropDownList[j] = new GUIContent(categories[j]);
-                dropDowns.Add("Category", new UMFDropDown(new Rect(buttonBarTotalWidth + 80 + 10, dataHeight, 300, 30), new GUIContent(category), dropDownList));
-            }
-            category = (dropDowns["Category"].SelectedItemIndex != -1 ? categories[dropDowns["Category"].SelectedItemIndex] : category);
-            if (GUI.Button(new Rect(buttonBarTotalWidth + 80 + 10 + 300 + 10, dataHeight, 30, 30), "X")) category = "All";
-            if (category != "All")
-            {
-                //if (category == "Allergy Free") itemIds = itemIds.Where(x => Identifiable.IsAllergyFree(x)).ToList();
-                if (category == "Animal") itemIds = itemIds.Where(x => Identifiable.IsAnimal(x)).ToList();
-                if (category == "Chick") itemIds = itemIds.Where(x => Identifiable.IsChick(x)).ToList();
-                if (category == "Craft") itemIds = itemIds.Where(x => Identifiable.IsCraft(x)).ToList();
-                if (category == "Echo") itemIds = itemIds.Where(x => Identifiable.IsEcho(x)).ToList();
-                if (category == "Fashion") itemIds = itemIds.Where(x => Identifiable.IsFashion(x)).ToList();
-                if (category == "Food") itemIds = itemIds.Where(x => Identifiable.IsFood(x)).ToList();
-                if (category == "Fruit") itemIds = itemIds.Where(x => Identifiable.IsFruit(x)).ToList();
-                if (category == "Gordo") itemIds = itemIds.Where(x => Identifiable.IsGordo(x)).ToList();
-                if (category == "Largo") itemIds = itemIds.Where(x => Identifiable.IsLargo(x)).ToList();
-                //if (category == "Non-Slime Resource") itemIds = itemIds.Where(x => Identifiable.IsNonSlimeResource(x)).ToList();
-                if (category == "Ornament") itemIds = itemIds.Where(x => Identifiable.IsOrnament(x)).ToList();
-                if (category == "Plort") itemIds = itemIds.Where(x => Identifiable.IsPlort(x)).ToList();
-                if (category == "Slime") itemIds = itemIds.Where(x => Identifiable.IsSlime(x)).ToList();
-                if (category == "Toy") itemIds = itemIds.Where(x => Identifiable.IsToy(x)).ToList();
-                if (category == "Veggie") itemIds = itemIds.Where(x => Identifiable.IsVeggie(x)).ToList();
-            }
-            itemIds.Sort();
-            if (!itemIds.Contains(Identifiable.Id.NONE)) itemIds.Insert(0, Identifiable.Id.NONE);
-            GUI.Label(new Rect(buttonBarTotalWidth + 80 + 10 + 300 + 10 + 30 + 10 + 35, dataHeight - 20, 100, 30), "Items: " + (itemIds.Count - 1).ToString(), styleNormal);
-
-
-            //Item Slots
-            for (int i = 0; i < ammo.GetUsableSlotCount(); i++)
-            {
-                dataHeight += 40;
-                string slot = "Slot " + (i + 1).ToString();
-                bool slot5 = (i == 4);
-                GUI.Label(new Rect(buttonBarTotalWidth, dataHeight, 80, 30), slot + ": ", styleSlot);
-                if (!dropDowns.ContainsKey(slot))
+                //Command Buttons
+                int buttonBar = 0;
+                int numButtons = 6;
+                int buttonBarTotalWidth = 2 + 160 + 10;
+                buttonBarScroll = GUI.BeginScrollView(new Rect(2, 68, 160, guiSizeY - 72), buttonBarScroll, new Rect(0, 0, 0, 40 * numButtons + 10), false, true);
+                if (GUI.Button(new Rect(8, buttonBar += 10, 130, 30), "Refill Items"))
                 {
-                    GUIContent[] dropDownList = new GUIContent[(slot5 ? itemIdsWater.Count : itemIds.Count)];
-                    for (int j = 0; j < (slot5 ? itemIdsWater.Count : itemIds.Count); j++) dropDownList[j] = new GUIContent(GetItemName((slot5 ? itemIdsWater[j] : itemIds[j])).ToString());
-                    dropDowns.Add(slot, new UMFDropDown(new Rect(buttonBarTotalWidth + 80 + 10, dataHeight, 300, 30), new GUIContent(GetItemName(GetSlotItemId(i))), dropDownList));
-                    slotCounts.Add(slot, GetSlotCount(i));
-                }
-                if (GUI.Button(new Rect(buttonBarTotalWidth + 80 + 10 + 300 + 10, dataHeight, 30, 30), "X"))
-                {
-                    ClearItem(i);
+                    RefillItems();
                     MenuUpdate = true;
-                    return;
                 }
-                slotCounts[slot] = int.Parse(GUI.TextField(new Rect(buttonBarTotalWidth + 80 + 10 + 300 + 10 + 30 + 10, dataHeight, 50, 30), (MenuUpdate ? GetSlotCount(i).ToString() : slotCounts[slot].ToString())));
-                slotCounts[slot] = Mathf.RoundToInt(GUI.HorizontalSlider(new Rect(buttonBarTotalWidth + 80 + 10 + 300 + 10 + 30 + 10 + 50 + 10, dataHeight + 8, 135, 30), (float)slotCounts[slot], 0f, (float)GetSlotMaxCount(i)));
-                Identifiable.Id selectedItem = dropDowns[slot].SelectedItemIndex != -1 ? (MenuUpdate ? GetSlotItemId(i) : (slot5 ? itemIdsWater[dropDowns[slot].SelectedItemIndex] : itemIds[dropDowns[slot].SelectedItemIndex])) : GetSlotItemId(i);
-                if (selectedItem != Identifiable.Id.NONE && slotCounts[slot] == 0) slotCounts[slot] = 1;
-                if (selectedItem == Identifiable.Id.NONE) slotCounts[slot] = 0;
-                if (selectedItem != GetSlotItemId(i) || slotCounts[slot] != GetSlotCount(i)) Item(selectedItem, slotCounts[slot], i);
-            }
-            GUI.Label(new Rect(buttonBarTotalWidth, dataHeight += 40, guiSizeX - 20, 30), "Note: Items that are not listed require a mod to make those items vacuumable.", styleNormal);
-
-
-            //If any item slot drop downs are activated, disable the controls below them.
-            bool isCBClicked = false;
-            foreach (UMFDropDown dd in dropDowns.Values)
-            {
-                if (dd.IsButtonClicked)
+                if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "No Clip [" + (noClip ? "On" : "Off") + "]"))
                 {
-                    isCBClicked = true;
-                    break;
+                    ToggleNoClip();
+                    ToggleMenu();
                 }
+                if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Inf Health [" + (infiniteHealth ? "On" : "Off") + "]"))
+                {
+                    ToggleInfiniteHealth();
+                    ToggleMenu();
+                }
+                if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Inf Energy [" + (infiniteEnergy ? "On" : "Off") + "]"))
+                {
+                    ToggleInfiniteEnergy();
+                    ToggleMenu();
+                }
+                if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Inc Time"))
+                {
+                    SetWorldTime(GetWorldTime() + 3600d);
+                }
+                if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Dec Time"))
+                {
+                    SetWorldTime(GetWorldTime() - 3600d);
+                }
+                if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Sleepwalk [" + (timeDirector.IsFastForwarding() ? "On" : "Off") + "]"))
+                {
+                    ToggleSleepwalk();
+                    ToggleMenu();
+                }
+                GUI.EndScrollView();
+
+                //Search
+                GUI.Label(new Rect(buttonBarTotalWidth, dataHeight += 40, 80, 30), "Search: ", styleSlot);
+                search = GUI.TextField(new Rect(buttonBarTotalWidth + 80 + 10, dataHeight, 300, 30), search);
+                if (GUI.Button(new Rect(buttonBarTotalWidth + 80 + 10 + 300 + 10, dataHeight, 30, 30), "X")) search = string.Empty;
+                if (searchPrevious != search || categoryPrevious != category || MenuUpdate)
+                {
+                    searchPrevious = search;
+                    categoryPrevious = category;
+                    dropDowns.Clear();
+                    slotCounts.Clear();
+                }
+                if (search != string.Empty) itemIds = itemEnum.Where(y => GetItemName(y).ToLower().Contains(search.ToLower())).Select(x => x).ToList();
+                else itemIds = itemEnum;
+                itemIds = SortItemList(itemIds);
+
+
+                //Category
+                GUI.Label(new Rect(buttonBarTotalWidth, dataHeight += 40, 80, 30), "Category: ", styleSlot);
+                if (!dropDowns.ContainsKey("Category"))
+                {
+                    GUIContent[] dropDownList = new GUIContent[categories.Count];
+                    for (int j = 0; j < categories.Count; j++) dropDownList[j] = new GUIContent(categories[j]);
+                    dropDowns.Add("Category", new UMFDropDown(new Rect(buttonBarTotalWidth + 80 + 10, dataHeight, 300, 30), new GUIContent(category), dropDownList));
+                }
+                category = (dropDowns["Category"].SelectedItemIndex != -1 ? categories[dropDowns["Category"].SelectedItemIndex] : category);
+                if (GUI.Button(new Rect(buttonBarTotalWidth + 80 + 10 + 300 + 10, dataHeight, 30, 30), "X")) category = "All";
+                if (category != "All")
+                {
+                    //if (category == "Allergy Free") itemIds = itemIds.Where(x => Identifiable.IsAllergyFree(x)).ToList();
+                    if (category == "Animal") itemIds = itemIds.Where(x => Identifiable.IsAnimal(x)).ToList();
+                    if (category == "Chick") itemIds = itemIds.Where(x => Identifiable.IsChick(x)).ToList();
+                    if (category == "Craft") itemIds = itemIds.Where(x => Identifiable.IsCraft(x)).ToList();
+                    if (category == "Echo") itemIds = itemIds.Where(x => Identifiable.IsEcho(x)).ToList();
+                    if (category == "Echo Note") itemIds = itemIds.Where(x => Identifiable.IsEchoNote(x)).ToList();
+                    if (category == "Fashion") itemIds = itemIds.Where(x => Identifiable.IsFashion(x)).ToList();
+                    if (category == "Food") itemIds = itemIds.Where(x => Identifiable.IsFood(x)).ToList();
+                    if (category == "Fruit") itemIds = itemIds.Where(x => Identifiable.IsFruit(x)).ToList();
+                    if (category == "Gordo") itemIds = itemIds.Where(x => Identifiable.IsGordo(x)).ToList();
+                    if (category == "Largo") itemIds = itemIds.Where(x => Identifiable.IsLargo(x)).ToList();
+                    //if (category == "Non-Slime Resource") itemIds = itemIds.Where(x => Identifiable.IsNonSlimeResource(x)).ToList();
+                    if (category == "Ornament") itemIds = itemIds.Where(x => Identifiable.IsOrnament(x)).ToList();
+                    if (category == "Plort") itemIds = itemIds.Where(x => Identifiable.IsPlort(x)).ToList();
+                    if (category == "Slime") itemIds = itemIds.Where(x => Identifiable.IsSlime(x)).ToList();
+                    if (category == "Toy") itemIds = itemIds.Where(x => Identifiable.IsToy(x)).ToList();
+                    if (category == "Veggie") itemIds = itemIds.Where(x => Identifiable.IsVeggie(x)).ToList();
+                }
+                //itemIds.Sort();
+                itemIds = SortItemList(itemIds);
+                if (!itemIds.Contains(Identifiable.Id.NONE)) itemIds.Insert(0, Identifiable.Id.NONE);
+                GUI.Label(new Rect(buttonBarTotalWidth + 80 + 10 + 300 + 10 + 30 + 10 + 35, dataHeight - 20, 100, 30), "Items: " + (itemIds.Count - 1).ToString(), styleNormal);
+
+
+                //Item Slots
+                for (int i = 0; i < ammo.GetUsableSlotCount(); i++)
+                {
+                    dataHeight += 40;
+                    string slot = "Slot " + (i + 1).ToString();
+                    bool slot5 = (i == 4);
+                    GUI.Label(new Rect(buttonBarTotalWidth, dataHeight, 80, 30), slot + ": ", styleSlot);
+                    if (!dropDowns.ContainsKey(slot))
+                    {
+                        GUIContent[] dropDownList = new GUIContent[(slot5 ? itemIdsWater.Count : itemIds.Count)];
+                        for (int j = 0; j < (slot5 ? itemIdsWater.Count : itemIds.Count); j++) dropDownList[j] = new GUIContent(GetItemName((slot5 ? itemIdsWater[j] : itemIds[j])), itemTextures[(slot5 ? itemIdsWater[j] : itemIds[j])]);
+                        dropDowns.Add(slot, new UMFDropDown(new Rect(buttonBarTotalWidth + 80 + 10, dataHeight, 300, 30), new GUIContent(GetItemName(GetSlotItemId(i)), itemTextures[GetSlotItemId(i)]), dropDownList, styleDropdown));
+                        dropDowns[slot].EntriesBeforeScroll = 10 - i;
+                        slotCounts.Add(slot, GetSlotCount(i));
+                    }
+                    if (GUI.Button(new Rect(buttonBarTotalWidth + 80 + 10 + 300 + 10, dataHeight, 30, 30), "X"))
+                    {
+                        ClearItem(i);
+                        MenuUpdate = true;
+                        return;
+                    }
+                    slotCounts[slot] = int.Parse(GUI.TextField(new Rect(buttonBarTotalWidth + 80 + 10 + 300 + 10 + 30 + 10, dataHeight, 50, 30), (MenuUpdate ? GetSlotCount(i).ToString() : slotCounts[slot].ToString())));
+                    slotCounts[slot] = Mathf.RoundToInt(GUI.HorizontalSlider(new Rect(buttonBarTotalWidth + 80 + 10 + 300 + 10 + 30 + 10 + 50 + 10, dataHeight + 8, 135, 30), (float)slotCounts[slot], 0f, (float)GetSlotMaxCount(i)));
+                    Identifiable.Id selectedItem = dropDowns[slot].SelectedItemIndex != -1 ? (MenuUpdate ? GetSlotItemId(i) : (slot5 ? itemIdsWater[dropDowns[slot].SelectedItemIndex] : itemIds[dropDowns[slot].SelectedItemIndex])) : GetSlotItemId(i);
+                    if (selectedItem != Identifiable.Id.NONE && slotCounts[slot] == 0) slotCounts[slot] = 1;
+                    if (selectedItem == Identifiable.Id.NONE) slotCounts[slot] = 0;
+                    if (categoryPrevious == category && (selectedItem != GetSlotItemId(i) || slotCounts[slot] != GetSlotCount(i))) Item(selectedItem, slotCounts[slot], i);
+                }
+                GUI.Label(new Rect(buttonBarTotalWidth, dataHeight += 40, guiSizeX - 20, 30), "Note: Items that are not listed require a mod to make those items vacuumable.", styleNormal);
+
+
+                //If any item slot drop downs are activated, disable the controls below them.
+                bool isCBClicked = false;
+                foreach (UMFDropDown dd in dropDowns.Values)
+                {
+                    if (dd.IsButtonClicked)
+                    {
+                        isCBClicked = true;
+                        break;
+                    }
+                }
+
+
+                //Money
+                GUI.Label(new Rect(buttonBarTotalWidth, dataHeight += 40, 80, 30), "Money: ", styleSlot);
+                if (isCBClicked) GUI.enabled = false;
+                playerModel.currency = int.Parse(GUI.TextField(new Rect(buttonBarTotalWidth + 80 + 10, dataHeight, 80, 30), playerModel.currency.ToString()));
+                playerModel.currency = Mathf.RoundToInt(GUI.HorizontalSlider(new Rect(buttonBarTotalWidth + 80 + 10 + 80 + 10, dataHeight + 8, 455, 30), (float)playerModel.currency, 0f, 999999f));
+                GUI.enabled = true;
+
+                //Keys
+                GUI.Label(new Rect(buttonBarTotalWidth, dataHeight += 40, 80, 30), "Keys: ", styleSlot);
+                if (isCBClicked) GUI.enabled = false;
+                playerModel.keys = int.Parse(GUI.TextField(new Rect(buttonBarTotalWidth + 80 + 10, dataHeight, 80, 30), playerModel.keys.ToString()));
+                playerModel.keys = Mathf.RoundToInt(GUI.HorizontalSlider(new Rect(buttonBarTotalWidth + 80 + 10 + 80 + 10, dataHeight + 8, 455, 30), (float)playerModel.keys, 0f, 100f));
+                GUI.enabled = true;
             }
 
 
-            //Money
-            GUI.Label(new Rect(buttonBarTotalWidth, dataHeight += 40, 80, 30), "Money: ", styleSlot);
-            if (isCBClicked) GUI.enabled = false;
-            money = int.Parse(GUI.TextField(new Rect(buttonBarTotalWidth + 80 + 10, dataHeight, 80, 30), (MenuUpdate ? GetMoney().ToString() : money.ToString())));
-            money = Mathf.RoundToInt(GUI.HorizontalSlider(new Rect(buttonBarTotalWidth + 80 + 10 + 80 + 10, dataHeight + 8, 455, 30), (float)money, 0f, 999999f));
-            GUI.enabled = true;
-            if (GetMoney() != money) SetMoney(money);
+            //Refinery Tab
+            if (toolbarTab == 1)
+            {
+                //Command Buttons
+                int buttonBar = -30;
+                int numButtons = 2;
+                int buttonBarTotalWidth = 2 + 160 + 10;
+                buttonBarScroll = GUI.BeginScrollView(new Rect(2, 68, 160, guiSizeY - 72), buttonBarScroll, new Rect(0, 0, 0, 40 * numButtons + 10), false, true);
+                if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Max All"))
+                {
+                    gadgetsModel.craftMatCounts.Clear();
+                    foreach (Identifiable.Id id in itemIdsRefinery)
+                    {
+                        if (!gadgetsModel.craftMatCounts.ContainsKey(id)) gadgetsModel.craftMatCounts.Add(id, GadgetDirector.REFINERY_MAX);
+                        else gadgetsModel.craftMatCounts[id] = GadgetDirector.REFINERY_MAX;
+                    }
+                }
+                if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Empty All"))
+                {
+                    gadgetsModel.craftMatCounts.Clear();
+                }
+                GUI.EndScrollView();
 
-            //Keys
-            GUI.Label(new Rect(buttonBarTotalWidth, dataHeight += 40, 80, 30), "Keys: ", styleSlot);
-            if (isCBClicked) GUI.enabled = false;
-            keys = int.Parse(GUI.TextField(new Rect(buttonBarTotalWidth + 80 + 10, dataHeight, 80, 30), (MenuUpdate ? GetKeys().ToString() : keys.ToString())));
-            keys = Mathf.RoundToInt(GUI.HorizontalSlider(new Rect(buttonBarTotalWidth + 80 + 10 + 80 + 10, dataHeight + 8, 455, 30), (float)keys, 0f, 100f));
-            GUI.enabled = true;
-            if (GetKeys() != keys) SetKeys(keys);
+                //Refinery Entries
+                int numEntries = itemIdsRefinery.Count;
+                refineryScroll = GUI.BeginScrollView(new Rect(buttonBarTotalWidth, 68, guiSizeX - buttonBarTotalWidth - 4, guiSizeY - 72), refineryScroll, new Rect(0, 0, 0, 40 * numEntries + 10), false, true);
+                dataHeight = -30;
+                foreach (Identifiable.Id id in itemIdsRefinery)
+                {
+                    GUI.Label(new Rect(0, dataHeight += 40, 40, 40), itemTextures[id]);
+                    GUI.Label(new Rect(35, dataHeight, 150, 30), refineryNames[id] + ":", styleSlot);
+                    if (!gadgetsModel.craftMatCounts.ContainsKey(id)) gadgetsModel.craftMatCounts.Add(id, 0);
+                    gadgetsModel.craftMatCounts[id] = int.Parse(GUI.TextField(new Rect(35 + 150 + 5, dataHeight, 60, 30), gadgetsModel.craftMatCounts[id].ToString()));
+                    gadgetsModel.craftMatCounts[id] = Mathf.RoundToInt(GUI.HorizontalSlider(new Rect(35 + 150 + 5 + 60 + 5, dataHeight + 8, 320, 30), (float)gadgetsModel.craftMatCounts[id], 0f, (float)GadgetDirector.REFINERY_MAX));
+                    if (GUI.Button(new Rect(35 + 150 + 5 + 60 + 5 + 320 + 5, dataHeight, 30, 30), "X")) gadgetsModel.craftMatCounts[id] = 0;
+                    //if (gadgetsModel.craftMatCounts[id] == 0) gadgetsModel.craftMatCounts.Remove(id);
+                }
+                GUI.EndScrollView();
+            }
+
+
+            //Gadgets Tab
+            if (toolbarTab == 2)
+            {
+                //Command Buttons
+                int buttonBar = -30;
+                int numButtons = 2;
+                int buttonBarTotalWidth = 2 + 160 + 10;
+                buttonBarScroll = GUI.BeginScrollView(new Rect(2, 68, 160, guiSizeY - 72), buttonBarScroll, new Rect(0, 0, 0, 40 * numButtons + 10), false, true);
+                if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Max All"))
+                {
+                    gadgetsModel.gadgets.Clear();
+                    foreach (Gadget.Id id in itemIdsGadgets)
+                    {
+                        if (!gadgetsModel.gadgets.ContainsKey(id)) gadgetsModel.gadgets.Add(id, GadgetDirector.REFINERY_MAX);
+                        else gadgetsModel.gadgets[id] = GadgetDirector.REFINERY_MAX;
+                    }
+                }
+                if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Empty All"))
+                {
+                    gadgetsModel.gadgets.Clear();
+                }
+                GUI.EndScrollView();
+
+                //Gadget Entries
+                int numEntries = itemIdsGadgets.Count;
+                gadgetScroll = GUI.BeginScrollView(new Rect(buttonBarTotalWidth, 68, guiSizeX - buttonBarTotalWidth - 4, guiSizeY - 72), gadgetScroll, new Rect(0, 0, 0, 40 * numEntries + 10), false, true);
+                dataHeight = -30;
+                foreach (Gadget.Id id in itemIdsGadgets)
+                {
+                    GUI.Label(new Rect(0, dataHeight += 40, 40, 40), gadgetTextures[id]);
+                    GUI.Label(new Rect(35, dataHeight, 220, 30), gadgetNames[id] + ":", styleSlot);
+                    if (!gadgetsModel.gadgets.ContainsKey(id)) gadgetsModel.gadgets.Add(id, 0);
+                    gadgetsModel.gadgets[id] = int.Parse(GUI.TextField(new Rect(35 + 220 + 5, dataHeight, 60, 30), gadgetsModel.gadgets[id].ToString()));
+                    gadgetsModel.gadgets[id] = Mathf.RoundToInt(GUI.HorizontalSlider(new Rect(35 + 220 + 5 + 60 + 5, dataHeight + 8, 250, 30), (float)gadgetsModel.gadgets[id], 0f, (float)GadgetDirector.REFINERY_MAX));
+                    if (GUI.Button(new Rect(35 + 220 + 5 + 60 + 5 + 250 + 5, dataHeight, 30, 30), "X")) gadgetsModel.gadgets[id] = 0;
+                    //if (gadgetsModel.gadgets[id] == 0) gadgetsModel.gadgets.Remove(id);
+                }
+                GUI.EndScrollView();
+            }
 
 
             //Show dropdowns in reverse order to prevent overlap clipping, and disable any that are below an activated drop down.

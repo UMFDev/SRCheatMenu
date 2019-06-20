@@ -10,6 +10,18 @@ Example: savebinds AutoExec
 Make sure you backup your save before using any of the unlock and reset commands.
 
 
+Version 1.50
+- New: Refinery tab lets you edit the items in the refinery.
+- New: Gadget tab lets you edit how many of each gadget you have.
+- New: Added icons and a larger font to the inventory dropdown menus.
+- New: Setting to toggle spawning items from other zones.
+- New: Added a 'Echo Note' category.
+- Changed: Better sorting of the item list.
+- Bugfix: Changing category with items in inventory caused the items to be replaced.
+- Bugfix: Removed duplicate sleepwalk console command.
+- Bugfix: Fixed incorrect fetching of water/liquids.
+
+
 Version 1.15
 - Updated for Slime Rancher 1.4.0.
 
