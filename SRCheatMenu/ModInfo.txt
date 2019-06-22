@@ -10,11 +10,24 @@ Example: savebinds AutoExec
 Make sure you backup your save before using any of the unlock and reset commands.
 
 
+Version 1.60
+- New: Added Target tab for editing inventory of the Silo/Feeder/Plort Collector you are looking at.
+- New: Added icons to the tabs.
+- New: Added displaying of the Cheat Menu Keybind on screen for 20 seconds.
+- New: Added console command srcm_unlocktreasurepods for unlocking all treasure pods.
+- New: Added console command srcm_resettreasurepods for reseting all treasure pods.
+- Changed: Console commmand srcm_unlockprogress now also unlocks all doors.
+- Changed: Refinery/Gadget sliders are now affected by SR Mutli Mod's RefineryLimit setting.
+- Changed: Made the Category drop down have the same font style as item drop downs.
+- Bugfix: Fixed some minor errors from the unity log.
+- Bugfix: Fix for not being able to enter The Slimeulation when using unlockprogress.
+
+
 Version 1.50
 - New: Refinery tab lets you edit the items in the refinery.
 - New: Gadget tab lets you edit how many of each gadget you have.
 - New: Added icons and a larger font to the inventory dropdown menus.
-- New: Setting to toggle spawning items from other zones.
+- New: Setting GetAllItems lets you add all items in the game, rather than just those normally available.
 - New: Added a 'Echo Note' category.
 - Changed: Better sorting of the item list.
 - Bugfix: Changing category with items in inventory caused the items to be replaced.

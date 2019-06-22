@@ -9,7 +9,7 @@ namespace SRCheatMenu
         private static readonly string configVersion = "1.50";
 
         internal static bool GetAllItems;
-        private static string[] KeysCheatMenu;
+        internal static string[] KeysCheatMenu;
         private static string[] KeysRefill;
         private static string[] KeysNoClip;
         private static string[] KeysInfHealth;
@@ -45,7 +45,7 @@ namespace SRCheatMenu
 
                     SRCheatMenu.Log("Finished UMF Settings.");
 
-                    GetAllItems = cfg.Read("GetAllItems", new UMFConfigBool(false, null, true), "If enabled will fetch items from all expansion zones, rather than just the items normally available in the zone. USE AT YOUR OWN RISK!");
+                    GetAllItems = cfg.Read("GetAllItems", new UMFConfigBool(false, null, true), "If enabled will let you add all items from the game, rather than just the items normally available. USE AT YOUR OWN RISK!");
 
                     IncDecTimeDefault = cfg.Read("IncDecTimeDefault", new UMFConfigDouble(60d, 1d, 1440d, 0), "The default value used for increasing and decreasing time in minutes.");
 
@@ -82,7 +82,7 @@ namespace SRCheatMenu
         internal void UpdateBinds()
         {
             for (int i = 0; i < KeysCheatMenu.Length; i++) UMFGUI.RegisterBind("KeysCheatMenu" + i.ToString(), KeysCheatMenu[i], SRCheatMenu.Instance.ToggleMenu);
-            for (int i = 0; i < KeysRefill.Length; i++) UMFGUI.RegisterBind("KeysRefill" + i.ToString(), KeysRefill[i], SRCheatMenu.Instance.RefillItems);
+            for (int i = 0; i < KeysRefill.Length; i++) UMFGUI.RegisterBind("KeysRefill" + i.ToString(), KeysRefill[i], SRCheatMenu.Instance.BindRefillItems);
             for (int i = 0; i < KeysNoClip.Length; i++) UMFGUI.RegisterBind("KeysNoClip" + i.ToString(), KeysNoClip[i], SRCheatMenu.Instance.ToggleNoClip);
             for (int i = 0; i < KeysInfHealth.Length; i++) UMFGUI.RegisterBind("KeysInfHealth" + i.ToString(), KeysInfHealth[i], SRCheatMenu.Instance.ToggleInfiniteHealth);
             for (int i = 0; i < KeysInfEnergy.Length; i++) UMFGUI.RegisterBind("KeysInfEnergy" + i.ToString(), KeysInfEnergy[i], SRCheatMenu.Instance.ToggleInfiniteEnergy);
