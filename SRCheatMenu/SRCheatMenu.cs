@@ -27,6 +27,7 @@ namespace SRCheatMenu
         private Vector2 buttonBarScroll = Vector2.zero;
         private Vector2 refineryScroll = Vector2.zero;
         private Vector2 gadgetScroll = Vector2.zero;
+        private Vector2 decorizerScroll = Vector2.zero;
         private Vector2 targetScroll = Vector2.zero;
         private static GUIStyle styleSlot = new GUIStyle();
         private static GUIStyle styleNormal = new GUIStyle();
@@ -60,12 +61,14 @@ namespace SRCheatMenu
         private static List<Identifiable.Id> itemIdsWater = new List<Identifiable.Id>();
         private static List<Identifiable.Id> itemIdsRefinery = new List<Identifiable.Id>();
         private static List<Gadget.Id> itemIdsGadgets = new List<Gadget.Id>();
+        private static List<Identifiable.Id> itemIdsDecorizer = new List<Identifiable.Id>();
         private static Dictionary<Identifiable.Id, Texture2D> itemTextures = new Dictionary<Identifiable.Id, Texture2D>();
         private static readonly Texture2D textureClear = UMFUnity.ColorToTexture2D(2, 2, Color.clear);
         private static int RefineryLimit = 999;
         private static Dictionary<Identifiable.Id, string> refineryNames = new Dictionary<Identifiable.Id, string>();
         private static Dictionary<Gadget.Id, Texture2D> gadgetTextures = new Dictionary<Gadget.Id, Texture2D>();
         private static Dictionary<Gadget.Id, string> gadgetNames = new Dictionary<Gadget.Id, string>();
+        private static Dictionary<Identifiable.Id, string> decorizerNames = new Dictionary<Identifiable.Id, string>();
         private static readonly List<Identifiable.Id> blockedIds = new List<Identifiable.Id>() { Identifiable.Id.NONE, Identifiable.Id.PLAYER };
         private static readonly string fileSpawns = Path.Combine(UMFData.ModInfosPath, "SRCheatMenu_Spawns.txt");
         private static readonly string fileItems = Path.Combine(UMFData.ModInfosPath, "SRCheatMenu_Items.txt");
@@ -83,6 +86,7 @@ namespace SRCheatMenu
         private PlayerModel playerModel;
         private WorldModel worldModel;
         private GadgetsModel gadgetsModel;
+        private DecorizerModel decorizerModel;
         //private RanchDirector ranchDirector;
         private GadgetDirector gadgetDirector;
         private DLCDirector dlcDirector;
@@ -164,6 +168,7 @@ namespace SRCheatMenu
                     playerModel = gameModel.GetPlayerModel();
                     worldModel = gameModel.GetWorldModel();
                     gadgetsModel = gameModel.GetGadgetsModel();
+                    decorizerModel = gameModel.GetDecorizerModel();
                     gadgetDirector = SRSingleton<SceneContext>.Instance.GadgetDirector;
                     //ranchDirector = SRSingleton<SceneContext>.Instance.RanchDirector;
                     dlcDirector = SRSingleton<GameContext>.Instance.DLCDirector;
@@ -203,6 +208,8 @@ namespace SRCheatMenu
                     RefineryLimit = gadgetDirector.GetRefinerySpaceAvailable(Identifiable.Id.PINK_PLORT) + gadgetDirector.GetRefineryCount(Identifiable.Id.PINK_PLORT);
                     if (RefineryLimit <= 0) RefineryLimit = 999;
                     itemIdsRefinery = Enum.GetValues(typeof(Identifiable.Id)).Cast<Identifiable.Id>().Where(id => GadgetDirector.IsRefineryResource(id)).ToList();
+                    itemIdsDecorizer = DecorizerModel.ITEM_CLASSES.SelectMany((HashSet<Identifiable.Id> c) => c).ToList();
+                    itemIdsDecorizer = SortDecorizerList(itemIdsDecorizer);
                     //if (refineryUI && refineryUI.listedItems.Length > 0) itemIdsRefinery = itemIdsRefinery.OrderBy(x => refineryUI.listedItems.ToList().FindIndex(y => x == y)).ToList(); //Where does the refinery pull it's sorting from?
                     refineryNames.Clear();
                     foreach (Identifiable.Id id in itemIdsRefinery)
@@ -219,16 +226,23 @@ namespace SRCheatMenu
                         gadgetNames.Add(id, GetGadgetName(id));
                         if (!gadgetsModel.gadgets.ContainsKey(id)) gadgetsModel.gadgets.Add(id, 0);
                     }
+                    decorizerNames.Clear();
+                    foreach (Identifiable.Id id in itemIdsDecorizer)
+                    {
+                        decorizerNames.Add(id, GetItemName(id));
+                        if (!decorizerContents.ContainsKey(id)) decorizerContents.Add(id, 0);
+                    }
                     toolbarTabs.Clear();
                     toolbarTabs.Add(new GUIContent("Main", pediaDirector.Get(PediaDirector.Id.UTILITIES).icon.texture));
                     toolbarTabs.Add(new GUIContent("Refinery", pediaDirector.Get(PediaDirector.Id.REFINERY).icon.texture));
                     toolbarTabs.Add(new GUIContent("Gadgets", pediaDirector.Get(PediaDirector.Id.FABRICATOR).icon.texture));
+                    toolbarTabs.Add(new GUIContent("Decorizer", pediaDirector.Get(PediaDirector.Id.DECORATIONS).icon.texture));
                     toolbarTabs.Add(new GUIContent("Target", pediaDirector.Get(PediaDirector.Id.SILO).icon.texture));
                 }
             }
             catch (Exception e)
             {
-                Log("Error: Failed to retrieve game instances: " + e.Message + " (" + e.InnerException?.Message + ")");
+                Log("Error: Failed to retrieve game instances: " + e.Message + " (" + e.InnerException?.Message + ") at " + e.Source);
             }
         }
         #endregion
@@ -527,6 +541,29 @@ namespace SRCheatMenu
             return result;
         }
 
+        private static List<Identifiable.Id> SortDecorizerList(List<Identifiable.Id> list)
+        {
+            list.Sort();
+            List<Identifiable.Id> result = new List<Identifiable.Id>();
+            result.AddRange(list.Where(x => Identifiable.ECHO_CLASS.Contains(x) && !result.Contains(x)));
+            result.AddRange(list.Where(x => Identifiable.ORNAMENT_CLASS.Contains(x) && !result.Contains(x)));
+            result.AddRange(list.Where(x => Identifiable.ECHO_NOTE_CLASS.Contains(x) && !result.Contains(x)));
+            result.AddRange(list.Where(x => !result.Contains(x)));
+            return result;
+        }
+
+        Dictionary<Identifiable.Id, int> decorizerContents
+        {
+            get
+            {
+                return Traverse.Create(Traverse.Create(decorizerModel).Field<ReferenceCount<Identifiable.Id>>("contents").Value).Field<Dictionary<Identifiable.Id, int>>("dictionary").Value;
+            }
+            set
+            {
+                Traverse.Create(Traverse.Create(decorizerModel).Field<ReferenceCount<Identifiable.Id>>("contents").Value).Field<Dictionary<Identifiable.Id, int>>("dictionary").Value = value;
+            }
+        }
+
         private Sprite GetIcon(Identifiable.Id id)
         {
             try
@@ -556,9 +593,9 @@ namespace SRCheatMenu
 
         internal void RefillItems(Ammo ammo)
         {
-            for (int i = 0; i < GetUsableSlotCount(); i++)
+            for (int i = 0; i < ammo.GetUsableSlotCount(); i++)
             {
-                if (GetSlotCount(i) > 0 && GetSlotCount(i) < GetSlotMaxCount(i) && GetSlotItemId(i) != Identifiable.Id.NONE) Item(ammo, GetSlotItemId(i), GetSlotMaxCount(i), i);
+                if (ammo.GetSlotCount(i) > 0 && ammo.GetSlotCount(i) < ammo.GetSlotMaxCount(i) && ammo.GetSlotName(i) != Identifiable.Id.NONE) Item(ammo, ammo.GetSlotName(i), ammo.GetSlotMaxCount(i), i);
             }
         }
 
@@ -868,6 +905,7 @@ namespace SRCheatMenu
                     }
                 }
             }
+            UMFGUI.AddConsoleText("Successfully unlocked all treasure pods.");
         }
 
         private IEnumerator AwardPrizesDefault(TreasurePod treasurePod)
@@ -896,6 +934,7 @@ namespace SRCheatMenu
                     }
                 }
             }
+            UMFGUI.AddConsoleText("Successfully reset all treasure pods.");
         }
         #endregion
 
@@ -1083,7 +1122,7 @@ namespace SRCheatMenu
             int dataHeight = 36;
 
             //Main Tab
-            if (toolbarTab == 0)
+            if (toolbarTabs[toolbarTab].text == "Main")
             {
                 //Command Buttons
                 int buttonBar = 0;
@@ -1251,7 +1290,7 @@ namespace SRCheatMenu
 
 
             //Refinery Tab
-            if (toolbarTab == 1)
+            if (toolbarTabs[toolbarTab].text == "Refinery")
             {
                 //Command Buttons
                 int buttonBar = -30;
@@ -1263,8 +1302,8 @@ namespace SRCheatMenu
                     gadgetsModel.craftMatCounts.Clear();
                     foreach (Identifiable.Id id in itemIdsRefinery)
                     {
-                        if (!gadgetsModel.craftMatCounts.ContainsKey(id)) gadgetsModel.craftMatCounts.Add(id, GadgetDirector.REFINERY_MAX);
-                        else gadgetsModel.craftMatCounts[id] = GadgetDirector.REFINERY_MAX;
+                        if (!gadgetsModel.craftMatCounts.ContainsKey(id)) gadgetsModel.craftMatCounts.Add(id, RefineryLimit);
+                        else gadgetsModel.craftMatCounts[id] = RefineryLimit;
                     }
                 }
                 if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Empty All"))
@@ -1291,7 +1330,7 @@ namespace SRCheatMenu
 
 
             //Gadgets Tab
-            if (toolbarTab == 2)
+            if (toolbarTabs[toolbarTab].text == "Gadgets")
             {
                 //Command Buttons
                 int buttonBar = -30;
@@ -1303,8 +1342,8 @@ namespace SRCheatMenu
                     gadgetsModel.gadgets.Clear();
                     foreach (Gadget.Id id in itemIdsGadgets)
                     {
-                        if (!gadgetsModel.gadgets.ContainsKey(id)) gadgetsModel.gadgets.Add(id, GadgetDirector.REFINERY_MAX);
-                        else gadgetsModel.gadgets[id] = GadgetDirector.REFINERY_MAX;
+                        if (!gadgetsModel.gadgets.ContainsKey(id)) gadgetsModel.gadgets.Add(id, RefineryLimit);
+                        else gadgetsModel.gadgets[id] = RefineryLimit;
                     }
                 }
                 if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Empty All"))
@@ -1330,8 +1369,47 @@ namespace SRCheatMenu
             }
 
 
+            //Decorizer Tab
+            if (toolbarTabs[toolbarTab].text == "Decorizer")
+            {
+                //Command Buttons
+                int buttonBar = -30;
+                int numButtons = 2;
+                int buttonBarTotalWidth = 2 + 160 + 10;
+                buttonBarScroll = GUI.BeginScrollView(new Rect(2, 68, 160, guiSizeY - 72), buttonBarScroll, new Rect(0, 0, 0, 40 * numButtons + 10), false, true);
+                if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Max All"))
+                {
+                    decorizerContents.Clear();
+                    foreach (Identifiable.Id id in itemIdsDecorizer)
+                    {
+                        if (!decorizerContents.ContainsKey(id)) decorizerContents.Add(id, RefineryLimit);
+                        else decorizerContents[id] = RefineryLimit;
+                    }
+                }
+                if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Empty All"))
+                {
+                    foreach (Identifiable.Id id in itemIdsDecorizer) decorizerContents[id] = 0;
+                }
+                GUI.EndScrollView();
+
+                //Decorizer Entries
+                int numEntries = itemIdsGadgets.Count;
+                decorizerScroll = GUI.BeginScrollView(new Rect(buttonBarTotalWidth, 68, guiSizeX - buttonBarTotalWidth - 4, guiSizeY - 72), decorizerScroll, new Rect(0, 0, 0, 40 * numEntries + 10), false, true);
+                dataHeight = -30;
+                foreach (Identifiable.Id id in itemIdsDecorizer)
+                {
+                    GUI.Label(new Rect(0, dataHeight += 40, 40, 40), itemTextures[id]);
+                    GUI.Label(new Rect(35, dataHeight, 220, 30), decorizerNames[id] + ":", styleSlot);
+                    decorizerContents[id] = int.Parse(GUI.TextField(new Rect(35 + 220 + 5, dataHeight, 60, 30), decorizerContents[id].ToString()));
+                    decorizerContents[id] = Mathf.RoundToInt(GUI.HorizontalSlider(new Rect(35 + 220 + 5 + 60 + 5, dataHeight + 8, 250, 30), (float)decorizerContents[id], 0f, (float)RefineryLimit));
+                    if (GUI.Button(new Rect(35 + 220 + 5 + 60 + 5 + 250 + 5, dataHeight, 30, 30), "X")) decorizerContents[id] = 0;
+                }
+                GUI.EndScrollView();
+            }
+
+
             //Target Tab
-            if (toolbarTab == 3)
+            if (toolbarTabs[toolbarTab].text == "Target")
             {
                 if (target == null)
                 {
@@ -1349,10 +1427,12 @@ namespace SRCheatMenu
                     if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Refill All"))
                     {
                         RefillItems(ammo);
+                        MenuUpdate = true;
                     }
                     if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Empty All"))
                     {
                         for (int i = 0; i < ammo.GetUsableSlotCount(); i++) ammo.Clear(i);
+                        MenuUpdate = true;
                     }
                     GUI.EndScrollView();
 
