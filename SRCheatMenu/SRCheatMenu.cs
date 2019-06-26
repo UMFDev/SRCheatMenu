@@ -893,11 +893,13 @@ namespace SRCheatMenu
         public void CommandUnlockTreasurePods()
         {
             if (!InGame(true)) return;
-            foreach (GameObject gameObject in Resources.FindObjectsOfTypeAll<GameObject>())
+            foreach (KeyValuePair<string, TreasurePodModel> kvp in SRSingleton<SceneContext>.Instance.GameModel.AllPods())
             {
-                if (gameObject.transform != null)
+                if (DLCDirector.SECRET_STYLE_TREASURE_PODS.Contains(kvp.Key) && dlcDirector.GetPackageState(DLCPackage.Id.SECRET_STYLE) != DLCPackage.State.INSTALLED) continue;
+                if (kvp.Value.state == TreasurePod.State.LOCKED)
                 {
-                    TreasurePod treasurePod = gameObject.GetComponent<TreasurePod>() ?? gameObject.GetComponentInChildren<TreasurePod>();
+                    GameObject pod = Traverse.Create(kvp.Value).Field<GameObject>("gameObj").Value;
+                    TreasurePod treasurePod = pod.GetComponent<TreasurePod>() ?? pod.GetComponentInChildren<TreasurePod>();
                     if (treasurePod != null && treasurePod.CurrState == TreasurePod.State.LOCKED)
                     {
                         Traverse.Create(treasurePod).Method("UpdateImmediate", TreasurePod.State.OPEN).GetValue();
@@ -923,12 +925,14 @@ namespace SRCheatMenu
         public void CommandResetTreasurePods()
         {
             if (!InGame(true)) return;
-            foreach (GameObject gameObject in Resources.FindObjectsOfTypeAll<GameObject>())
+            foreach (KeyValuePair<string, TreasurePodModel> kvp in SRSingleton<SceneContext>.Instance.GameModel.AllPods())
             {
-                if (gameObject.transform != null)
+                if (DLCDirector.SECRET_STYLE_TREASURE_PODS.Contains(kvp.Key) && dlcDirector.GetPackageState(DLCPackage.Id.SECRET_STYLE) != DLCPackage.State.INSTALLED) continue;
+                if (kvp.Value.state == TreasurePod.State.OPEN)
                 {
-                    TreasurePod treasurePod = gameObject.GetComponent<TreasurePod>() ?? gameObject.GetComponentInChildren<TreasurePod>();
-                    if (treasurePod != null)
+                    GameObject pod = Traverse.Create(kvp.Value).Field<GameObject>("gameObj").Value;
+                    TreasurePod treasurePod = pod.GetComponent<TreasurePod>() ?? pod.GetComponentInChildren<TreasurePod>();
+                    if (treasurePod != null && treasurePod.CurrState == TreasurePod.State.OPEN)
                     {
                         Traverse.Create(treasurePod).Method("UpdateImmediate", TreasurePod.State.LOCKED).GetValue();
                     }

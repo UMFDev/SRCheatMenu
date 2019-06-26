@@ -10,6 +10,10 @@ Example: savebinds AutoExec
 Make sure you backup your save before using any of the unlock and reset commands.
 
 
+Version 1.71
+- Bugfix: Prevented srcm_unlocktreasurepods from unlocking Secret Styles if the DLC is not installed.
+
+
 Version 1.70
 - New: Added Decorizer tab for editing the items in the Decorizer.
 - Changed: Max All buttons for all tabs are now affected by SR Multi Mod's RefineryLimit setting.
