@@ -10,6 +10,10 @@ Example: savebinds AutoExec
 Make sure you backup your save before using any of the unlock and reset commands.
 
 
+Version 1.72
+- Updated for Slime Rancher 1.4.1c.
+
+
 Version 1.71
 - Bugfix: Prevented srcm_unlocktreasurepods from unlocking Secret Styles if the DLC is not installed.
 

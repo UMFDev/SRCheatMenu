@@ -37,7 +37,7 @@ namespace SRCheatMenu
 
                     //cfg.Write("SupportsHotLoading", new UMFConfigBool(false));
                     cfg.Read("LoadPriority", new UMFConfigString("Normal"));
-                    cfg.Write("MinVersion", new UMFConfigString("0.52"));
+                    cfg.Write("MinVersion", new UMFConfigString("0.53.0"));
                     cfg.Write("MaxVersion", new UMFConfigString("0.54.99999.99999"));
                     //cfg.Write("UpdateURL", new UMFConfigString(@"https://raw.githubusercontent.com/UMFDev/SRCheatMenu/master/version.txt"));
                     cfg.Write("UpdateURL", new UMFConfigString(@"https://umodframework.com/updatemod?id=2"));

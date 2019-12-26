@@ -204,7 +204,7 @@ namespace SRCheatMenu
                     if (itemEnum.Count(x => Identifiable.IsToy(x)) == 0) categories.Remove("Toy");
                     itemEnum = SortItemList(itemEnum);
                     itemTextures.Clear();
-                    foreach (Identifiable.Id id in Enum.GetValues(typeof(Identifiable.Id))) itemTextures.Add(id, GetIcon(id)?.texture ?? textureClear);
+                    foreach (Identifiable.Id id in Enum.GetValues(typeof(Identifiable.Id))) itemTextures.Add(id, lookupDirector.GetIcon(id)?.texture ?? textureClear);
                     RefineryLimit = gadgetDirector.GetRefinerySpaceAvailable(Identifiable.Id.PINK_PLORT) + gadgetDirector.GetRefineryCount(Identifiable.Id.PINK_PLORT);
                     if (RefineryLimit <= 0) RefineryLimit = 999;
                     itemIdsRefinery = Enum.GetValues(typeof(Identifiable.Id)).Cast<Identifiable.Id>().Where(id => GadgetDirector.IsRefineryResource(id)).ToList();
@@ -217,12 +217,12 @@ namespace SRCheatMenu
                         refineryNames.Add(id, GetItemName(id));
                         if (!gadgetsModel.craftMatCounts.ContainsKey(id)) gadgetsModel.craftMatCounts.Add(id, 0);
                     }
-                    itemIdsGadgets = Enum.GetValues(typeof(Gadget.Id)).Cast<Gadget.Id>().Where(x => x != Gadget.Id.NONE && lookupDirector.HasGadgetEntry(x)/* && gadgetDirector.HasBlueprint(x)*/).ToList();
+                    itemIdsGadgets = Enum.GetValues(typeof(Gadget.Id)).Cast<Gadget.Id>().Where(x => x != Gadget.Id.NONE && lookupDirector.HasGadgetDefinition(x)/*HasGadgetEntry(x)*//* && gadgetDirector.HasBlueprint(x)*/).ToList();
                     gadgetTextures.Clear();
                     gadgetNames.Clear();
                     foreach (Gadget.Id id in itemIdsGadgets)
                     {
-                        gadgetTextures.Add(id, lookupDirector.GetGadgetEntry(id).icon.texture);
+                        gadgetTextures.Add(id, lookupDirector./*GetGadgetEntry(id)*/GetGadgetDefinition(id).icon.texture);
                         gadgetNames.Add(id, GetGadgetName(id));
                         if (!gadgetsModel.gadgets.ContainsKey(id)) gadgetsModel.gadgets.Add(id, 0);
                     }
@@ -564,7 +564,7 @@ namespace SRCheatMenu
             }
         }
 
-        private Sprite GetIcon(Identifiable.Id id)
+        /*private Sprite GetIcon(Identifiable.Id id)
         {
             try
             {
@@ -572,7 +572,7 @@ namespace SRCheatMenu
             }
             catch { }
             return null;
-        }
+        }*/
 
         private static string GetGadgetName(Gadget.Id id)
         {

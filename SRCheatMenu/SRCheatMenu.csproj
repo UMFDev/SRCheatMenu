@@ -11,7 +11,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SRCheatMenu</RootNamespace>
     <AssemblyName>SRCheatMenu</AssemblyName>
-	<TargetFrameworks>net35</TargetFrameworks>
+	<TargetFrameworks>net462</TargetFrameworks>
     <FileAlignment>512</FileAlignment>
 	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 	<Configurations>Release</Configurations>
