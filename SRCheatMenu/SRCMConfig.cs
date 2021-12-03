@@ -16,6 +16,7 @@ namespace SRCheatMenu
         private static string[] KeysInfEnergy;
         private static string[] KeysIncTime;
         private static string[] KeysDecTime;
+        private static string[] KeysPauseTime;
         private static string[] KeysSleepwalk;
         internal static double IncDecTimeDefault;
         internal static Color TextColor;
@@ -63,6 +64,8 @@ namespace SRCheatMenu
 
                     KeysDecTime = cfg.Read("KeysDecTime", new UMFConfigStringArray(new string[0], true), "The key(s) used to Decrease Time.");
 
+                    KeysPauseTime = cfg.Read("KeysPauseTime", new UMFConfigStringArray(new string[0], true), "The key(s) used to toggle pausing of time.");
+
                     KeysSleepwalk = cfg.Read("KeysSleepwalk", new UMFConfigStringArray(new string[0], true), "The key(s) used to toggle Sleepwalking.");
 
                     UpdateBinds();
@@ -88,6 +91,7 @@ namespace SRCheatMenu
             for (int i = 0; i < KeysInfEnergy.Length; i++) UMFGUI.RegisterBind("KeysInfEnergy" + i.ToString(), KeysInfEnergy[i], SRCheatMenu.Instance.ToggleInfiniteEnergy);
             for (int i = 0; i < KeysIncTime.Length; i++) UMFGUI.RegisterBind("KeysIncTime" + i.ToString(), KeysIncTime[i], SRCheatMenu.Instance.BindIncreaseTime);
             for (int i = 0; i < KeysDecTime.Length; i++) UMFGUI.RegisterBind("KeysDecTime" + i.ToString(), KeysDecTime[i], SRCheatMenu.Instance.BindDecreaseTime);
+            for (int i = 0; i < KeysPauseTime.Length; i++) UMFGUI.RegisterBind("KeysPauseTime" + i.ToString(), KeysPauseTime[i], SRCheatMenu.Instance.BindPauseTime);
             for (int i = 0; i < KeysSleepwalk.Length; i++) UMFGUI.RegisterBind("KeysSleepwalk" + i.ToString(), KeysSleepwalk[i], SRCheatMenu.Instance.BindSleepwalk);
         }
 

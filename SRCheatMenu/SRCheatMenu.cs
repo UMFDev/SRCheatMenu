@@ -25,6 +25,7 @@ namespace SRCheatMenu
         private int toolbarTabPrevious = 0;
         private Rect windowRect = guiRect;
         private Vector2 buttonBarScroll = Vector2.zero;
+        private Vector2 mainScroll = Vector2.zero;
         private Vector2 refineryScroll = Vector2.zero;
         private Vector2 gadgetScroll = Vector2.zero;
         private Vector2 decorizerScroll = Vector2.zero;
@@ -63,7 +64,8 @@ namespace SRCheatMenu
         private static List<Gadget.Id> itemIdsGadgets = new List<Gadget.Id>();
         private static List<Identifiable.Id> itemIdsDecorizer = new List<Identifiable.Id>();
         private static Dictionary<Identifiable.Id, Texture2D> itemTextures = new Dictionary<Identifiable.Id, Texture2D>();
-        private static readonly Texture2D textureClear = UMFUnity.ColorToTexture2D(2, 2, Color.clear);
+        //private static readonly Texture2D textureClear = UMFUnity.ColorToTexture2D(512, 512, Color.clear);
+        private static readonly Sprite spriteClear = Sprite.Create(UMFUnity.ColorToTexture2D(1, 1, Color.clear), new Rect(0, 0, 1, 1), new Vector2(0f, 0f), 1f);
         private static int RefineryLimit = 999;
         private static Dictionary<Identifiable.Id, string> refineryNames = new Dictionary<Identifiable.Id, string>();
         private static Dictionary<Gadget.Id, Texture2D> gadgetTextures = new Dictionary<Gadget.Id, Texture2D>();
@@ -142,6 +144,7 @@ namespace SRCheatMenu
             UMFGUI.RegisterCommand("srcm_infiniteEnergy", "srcm_infiniteenergy", new string[] { "infenergy" }, 0, "Toggles infinite energy.", CommandInfiniteEnergy);
             UMFGUI.RegisterCommand("srcm_increaseTime (<minutes>)", "srcm_increasetime", new string[] { "inctime" }, 0, "Increases the world time by 1 hour or the specified minutes.", CommandIncreaseTime);
             UMFGUI.RegisterCommand("srcm_decreaseTime (<minutes>)", "srcm_decreasetime", new string[] { "dectime" }, 0, "Decreases the world time by 1 hour or the specified minutes.", CommandDecreaseTime);
+            UMFGUI.RegisterCommand("srcm_pauseTime (<minutes>)", "srcm_pausetime", new string[] { "pausetime" }, 0, "Toggles pausing of time on/off.", CommandPauseTime);
             UMFGUI.RegisterCommand("srcm_sleepwalk", "srcm_sleepwalk", new string[] { "sleepwalk" }, 0, "Toggles the fast forward effect from sleeping.", CommandSleepwalk);
             UMFGUI.RegisterCommand("srcm_unlockUpgrades", "srcm_unlockupgrades", new string[] { "unlockupgrades" }, 0, "Unlocks all player upgrades.", CommandUnlockUpgrades);
             UMFGUI.RegisterCommand("srcm_resetUpgrades", "srcm_resetupgrades", new string[] { "resetupgrades" }, 0, "Resets all player upgrades.", CommandResetUpgrades);
@@ -204,7 +207,7 @@ namespace SRCheatMenu
                     if (itemEnum.Count(x => Identifiable.IsToy(x)) == 0) categories.Remove("Toy");
                     itemEnum = SortItemList(itemEnum);
                     itemTextures.Clear();
-                    foreach (Identifiable.Id id in Enum.GetValues(typeof(Identifiable.Id))) itemTextures.Add(id, lookupDirector.GetIcon(id)?.texture ?? textureClear);
+                    foreach (Identifiable.Id id in Enum.GetValues(typeof(Identifiable.Id))) itemTextures.Add(id, GetVacItemIcon(id).texture);
                     RefineryLimit = gadgetDirector.GetRefinerySpaceAvailable(Identifiable.Id.PINK_PLORT) + gadgetDirector.GetRefineryCount(Identifiable.Id.PINK_PLORT);
                     if (RefineryLimit <= 0) RefineryLimit = 999;
                     itemIdsRefinery = Enum.GetValues(typeof(Identifiable.Id)).Cast<Identifiable.Id>().Where(id => GadgetDirector.IsRefineryResource(id)).ToList();
@@ -564,15 +567,12 @@ namespace SRCheatMenu
             }
         }
 
-        /*private Sprite GetIcon(Identifiable.Id id)
+        private Sprite GetVacItemIcon(Identifiable.Id id)
         {
-            try
-            {
-                return Traverse.Create(lookupDirector).Field<Dictionary<Identifiable.Id, LookupDirector.VacEntry>>("vacEntryDict").Value[id].icon;
-            }
-            catch { }
-            return null;
-        }*/
+            Dictionary<Identifiable.Id, VacItemDefinition> vacItemDict = Traverse.Create(lookupDirector).Field<Dictionary<Identifiable.Id, VacItemDefinition>>("vacItemDict").Value;
+            if (vacItemDict.ContainsKey(id)) return vacItemDict[id].Icon ?? spriteClear;
+            else return spriteClear;
+        }
 
         private static string GetGadgetName(Gadget.Id id)
         {
@@ -704,6 +704,13 @@ namespace SRCheatMenu
             UMFGUI.AddConsoleText("Successfully decreased world time.");
         }
 
+        public void CommandPauseTime()
+        {
+            if (!InGame(true)) return;
+            PauseWorldTime();
+            UMFGUI.AddConsoleText("Successfully " + (worldModel.pauseWorldTime ? "paused" : "unpaused") + " time.");
+        }
+
         public void CommandSleepwalk()
         {
             if (!InGame(true)) return;
@@ -733,6 +740,11 @@ namespace SRCheatMenu
             DecreaseTime(SRCMConfig.IncDecTimeDefault * 60d);
         }
 
+        internal void BindPauseTime()
+        {
+            PauseWorldTime();
+        }
+
         private void IncreaseTime(double time)
         {
             SetWorldTime(GetWorldTime() + time);
@@ -746,6 +758,12 @@ namespace SRCheatMenu
         private void SetWorldTime(double value)
         {
             worldModel.worldTime = value;
+            if (worldModel.worldTime < 0d) worldModel.worldTime = 0d;
+        }
+
+        private void PauseWorldTime()
+        {
+            worldModel.pauseWorldTime = !worldModel.pauseWorldTime;
             if (worldModel.worldTime < 0d) worldModel.worldTime = 0d;
         }
 
@@ -1130,7 +1148,7 @@ namespace SRCheatMenu
             {
                 //Command Buttons
                 int buttonBar = 0;
-                int numButtons = 6;
+                int numButtons = 7;
                 int buttonBarTotalWidth = 2 + 160 + 10;
                 buttonBarScroll = GUI.BeginScrollView(new Rect(2, 68, 160, guiSizeY - 72), buttonBarScroll, new Rect(0, 0, 0, 40 * numButtons + 10), false, true);
                 if (GUI.Button(new Rect(8, buttonBar += 10, 130, 30), "Refill Items"))
@@ -1161,6 +1179,10 @@ namespace SRCheatMenu
                 {
                     SetWorldTime(GetWorldTime() - 3600d);
                 }
+                if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Un/Pause Time"))
+                {
+                    PauseWorldTime();
+                }
                 if (GUI.Button(new Rect(8, buttonBar += 40, 130, 30), "Sleepwalk [" + (timeDirector.IsFastForwarding() ? "On" : "Off") + "]"))
                 {
                     ToggleSleepwalk();
@@ -1168,10 +1190,14 @@ namespace SRCheatMenu
                 }
                 GUI.EndScrollView();
 
+
+                mainScroll = GUI.BeginScrollView(new Rect(buttonBarTotalWidth, 68, guiSizeX - buttonBarTotalWidth - 4, guiSizeY - 72), mainScroll, new Rect(0, 0, 0, 40 * (5 + ammoPlayer.GetUsableSlotCount()) + 10 + 40), false, true);
+                dataHeight = -30;
+
                 //Search
-                GUI.Label(new Rect(buttonBarTotalWidth, dataHeight += 40, 80, 30), "Search: ", styleSlot);
-                search = GUI.TextField(new Rect(buttonBarTotalWidth + 80 + 10, dataHeight, 260, 30), search);
-                if (GUI.Button(new Rect(buttonBarTotalWidth + 80 + 10 + 260 + 10, dataHeight, 30, 30), "X")) search = string.Empty;
+                GUI.Label(new Rect(0, dataHeight += 40, 80, 30), "Search: ", styleSlot);
+                search = GUI.TextField(new Rect(0 + 80 + 10, dataHeight, 260, 30), search);
+                if (GUI.Button(new Rect(0 + 80 + 10 + 260 + 10, dataHeight, 30, 30), "X")) search = string.Empty;
                 if (searchPrevious != search || categoryPrevious != category || MenuUpdate)
                 {
                     searchPrevious = search;
@@ -1185,15 +1211,15 @@ namespace SRCheatMenu
 
 
                 //Category
-                GUI.Label(new Rect(buttonBarTotalWidth, dataHeight += 40, 80, 30), "Category: ", styleSlot);
+                GUI.Label(new Rect(0, dataHeight += 40, 80, 30), "Category: ", styleSlot);
                 if (!dropDowns.ContainsKey("Category"))
                 {
                     GUIContent[] dropDownList = new GUIContent[categories.Count];
                     for (int j = 0; j < categories.Count; j++) dropDownList[j] = new GUIContent(categories[j]);
-                    dropDowns.Add("Category", new UMFDropDown(new Rect(buttonBarTotalWidth + 80 + 10, dataHeight, 260, 30), new GUIContent(category), dropDownList, styleDropdown));
+                    dropDowns.Add("Category", new UMFDropDown(new Rect(0 + 80 + 10, dataHeight, 260, 30), new GUIContent(category), dropDownList, styleDropdown));
                 }
                 category = (dropDowns["Category"].SelectedItemIndex != -1 ? categories[dropDowns["Category"].SelectedItemIndex] : category);
-                if (GUI.Button(new Rect(buttonBarTotalWidth + 80 + 10 + 260 + 10, dataHeight, 30, 30), "X")) category = "All";
+                if (GUI.Button(new Rect(0 + 80 + 10 + 260 + 10, dataHeight, 30, 30), "X")) category = "All";
                 if (category != "All")
                 {
                     //if (category == "Allergy Free") itemIds = itemIds.Where(x => Identifiable.IsAllergyFree(x)).ToList();
@@ -1217,7 +1243,7 @@ namespace SRCheatMenu
                 //itemIds.Sort();
                 itemIds = SortItemList(itemIds);
                 if (!itemIds.Contains(Identifiable.Id.NONE)) itemIds.Insert(0, Identifiable.Id.NONE);
-                GUI.Label(new Rect(buttonBarTotalWidth + 80 + 10 + 260 + 10 + 30 + 10 + 35, dataHeight - 20, 100, 30), "Items: " + (itemIds.Count - 1).ToString(), styleNormal);
+                GUI.Label(new Rect(0 + 80 + 10 + 260 + 10 + 30 + 10 + 35, dataHeight - 20, 100, 30), "Items: " + (itemIds.Count - 1).ToString(), styleNormal);
 
 
                 //Item Slots
@@ -1225,30 +1251,30 @@ namespace SRCheatMenu
                 {
                     dataHeight += 40;
                     string slot = "Slot " + (i + 1).ToString();
-                    bool slot5 = (i == 4);
-                    GUI.Label(new Rect(buttonBarTotalWidth, dataHeight, 80, 30), slot + ": ", styleSlot);
+                    bool slotWater = ammoPlayer.CouldAddToSlot(Identifiable.Id.WATER_LIQUID, i, false);
+                    GUI.Label(new Rect(0, dataHeight, 80, 30), slot + ": ", styleSlot);
                     if (!dropDowns.ContainsKey(slot))
                     {
-                        GUIContent[] dropDownList = new GUIContent[(slot5 ? itemIdsWater.Count : itemIds.Count)];
-                        for (int j = 0; j < (slot5 ? itemIdsWater.Count : itemIds.Count); j++) dropDownList[j] = new GUIContent(GetItemName((slot5 ? itemIdsWater[j] : itemIds[j])), itemTextures[(slot5 ? itemIdsWater[j] : itemIds[j])]);
-                        dropDowns.Add(slot, new UMFDropDown(new Rect(buttonBarTotalWidth + 80 + 10, dataHeight, 260, 30), new GUIContent(GetItemName(GetSlotItemId(i)), itemTextures[GetSlotItemId(i)]), dropDownList, styleDropdown));
-                        dropDowns[slot].EntriesBeforeScroll = 10 - i;
+                        GUIContent[] dropDownList = new GUIContent[(slotWater ? itemIdsWater.Count : itemIds.Count)];
+                        for (int j = 0; j < (slotWater ? itemIdsWater.Count : itemIds.Count); j++) dropDownList[j] = new GUIContent(GetItemName((slotWater ? itemIdsWater[j] : itemIds[j])), itemTextures[(slotWater ? itemIdsWater[j] : itemIds[j])]);
+                        dropDowns.Add(slot, new UMFDropDown(new Rect(0 + 80 + 10, dataHeight, 260, 30), new GUIContent(GetItemName(GetSlotItemId(i)), itemTextures[GetSlotItemId(i)]), dropDownList, styleDropdown));
+                        dropDowns[slot].EntriesBeforeScroll = 6;
                         slotCounts.Add(slot, GetSlotCount(i));
                     }
-                    if (GUI.Button(new Rect(buttonBarTotalWidth + 80 + 10 + 260 + 10, dataHeight, 30, 30), "X"))
+                    if (GUI.Button(new Rect(0 + 80 + 10 + 260 + 10, dataHeight, 30, 30), "X"))
                     {
                         ClearItem(ammoPlayer, i);
                         MenuUpdate = true;
                         return;
                     }
-                    slotCounts[slot] = int.Parse(GUI.TextField(new Rect(buttonBarTotalWidth + 80 + 10 + 260 + 10 + 30 + 10, dataHeight, 50, 30), (MenuUpdate ? GetSlotCount(i).ToString() : slotCounts[slot].ToString())));
-                    slotCounts[slot] = Mathf.RoundToInt(GUI.HorizontalSlider(new Rect(buttonBarTotalWidth + 80 + 10 + 260 + 10 + 30 + 10 + 50 + 10, dataHeight + 8, 160, 30), (float)slotCounts[slot], 0f, (float)GetSlotMaxCount(i)));
-                    Identifiable.Id selectedItem = dropDowns[slot].SelectedItemIndex != -1 ? (MenuUpdate ? GetSlotItemId(i) : (slot5 ? itemIdsWater[dropDowns[slot].SelectedItemIndex] : itemIds[dropDowns[slot].SelectedItemIndex])) : GetSlotItemId(i);
+                    slotCounts[slot] = int.Parse(GUI.TextField(new Rect(0 + 80 + 10 + 260 + 10 + 30 + 10, dataHeight, 50, 30), (MenuUpdate ? GetSlotCount(i).ToString() : slotCounts[slot].ToString())));
+                    slotCounts[slot] = Mathf.RoundToInt(GUI.HorizontalSlider(new Rect(0 + 80 + 10 + 260 + 10 + 30 + 10 + 50 + 10, dataHeight + 8, 150, 30), (float)slotCounts[slot], 0f, (float)GetSlotMaxCount(i)));
+                    Identifiable.Id selectedItem = dropDowns[slot].SelectedItemIndex != -1 ? (MenuUpdate ? GetSlotItemId(i) : (slotWater ? itemIdsWater[dropDowns[slot].SelectedItemIndex] : itemIds[dropDowns[slot].SelectedItemIndex])) : GetSlotItemId(i);
                     if (selectedItem != Identifiable.Id.NONE && slotCounts[slot] == 0) slotCounts[slot] = 1;
                     if (selectedItem == Identifiable.Id.NONE) slotCounts[slot] = 0;
                     if (categoryPrevious == category && (selectedItem != GetSlotItemId(i) || slotCounts[slot] != GetSlotCount(i))) Item(ammoPlayer, selectedItem, slotCounts[slot], i);
                 }
-                GUI.Label(new Rect(buttonBarTotalWidth, dataHeight += 40, guiSizeX - 20, 30), "Note: Items that are not listed require a mod to make those items vacuumable.", styleNormal);
+                GUI.Label(new Rect(0, dataHeight += 40, guiSizeX - 20, 30), "Note: Items that are not listed require a mod to make those items vacuumable.", styleNormal);
 
 
                 //If any item slot drop downs are activated, disable the controls below them.
@@ -1264,17 +1290,17 @@ namespace SRCheatMenu
 
 
                 //Money
-                GUI.Label(new Rect(buttonBarTotalWidth, dataHeight += 40, 80, 30), "Money: ", styleSlot);
+                GUI.Label(new Rect(0, dataHeight += 40, 80, 30), "Money: ", styleSlot);
                 if (isCBClicked) GUI.enabled = false;
-                playerModel.currency = int.Parse(GUI.TextField(new Rect(buttonBarTotalWidth + 80 + 10, dataHeight, 80, 30), playerModel.currency.ToString()));
-                playerModel.currency = Mathf.RoundToInt(GUI.HorizontalSlider(new Rect(buttonBarTotalWidth + 80 + 10 + 80 + 10, dataHeight + 8, 455, 30), (float)playerModel.currency, 0f, 999999f));
+                playerModel.currency = int.Parse(GUI.TextField(new Rect(0 + 80 + 10, dataHeight, 80, 30), playerModel.currency.ToString()));
+                playerModel.currency = Mathf.RoundToInt(GUI.HorizontalSlider(new Rect(0 + 80 + 10 + 80 + 10, dataHeight + 8, 430, 30), (float)playerModel.currency, 0f, 999999f));
                 GUI.enabled = true;
 
                 //Keys
-                GUI.Label(new Rect(buttonBarTotalWidth, dataHeight += 40, 80, 30), "Keys: ", styleSlot);
+                GUI.Label(new Rect(0, dataHeight += 40, 80, 30), "Keys: ", styleSlot);
                 if (isCBClicked) GUI.enabled = false;
-                playerModel.keys = int.Parse(GUI.TextField(new Rect(buttonBarTotalWidth + 80 + 10, dataHeight, 80, 30), playerModel.keys.ToString()));
-                playerModel.keys = Mathf.RoundToInt(GUI.HorizontalSlider(new Rect(buttonBarTotalWidth + 80 + 10 + 80 + 10, dataHeight + 8, 455, 30), (float)playerModel.keys, 0f, 100f));
+                playerModel.keys = int.Parse(GUI.TextField(new Rect(0 + 80 + 10, dataHeight, 80, 30), playerModel.keys.ToString()));
+                playerModel.keys = Mathf.RoundToInt(GUI.HorizontalSlider(new Rect(0 + 80 + 10 + 80 + 10, dataHeight + 8, 430, 30), (float)playerModel.keys, 0f, 100f));
                 GUI.enabled = true;
 
                 //Show dropdowns in reverse order to prevent overlap clipping, and disable any that are below an activated drop down.
@@ -1290,6 +1316,8 @@ namespace SRCheatMenu
                     if (isClicked) cb.Disable = true;
                     else cb.Disable = false;
                 }
+
+                GUI.EndScrollView();
             }
 
 

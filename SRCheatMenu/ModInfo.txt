@@ -10,6 +10,17 @@ Example: savebinds AutoExec
 Make sure you backup your save before using any of the unlock and reset commands.
 
 
+Version 1.76
+- New: Added toggling of pausing time to command buttons. (Requested by KomiksPL)
+- New: Added console command srcm_pausetime for toggling pausing of time.
+- New: Added config keybind for toggling pausinng of time.
+
+
+Version 1.75
+- New: Added Scrollbar to the Main tab.
+- New: Added support for mods that increase number of item/vacuum slots. (Requested by DracoClaw)
+
+
 Version 1.72
 - Updated for Slime Rancher 1.4.1c.
 
